@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#2F5BEA">
+<meta name="theme-color" content="#0E121A">
+<script>(function(){try{var t=JSON.parse(localStorage.getItem("pr.theme")||"\"dark\"");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t)}catch(e){document.documentElement.setAttribute("data-theme","dark")}if(!document.documentElement.getAttribute("data-theme")&&!localStorage.getItem("pr.theme"))document.documentElement.setAttribute("data-theme","dark")})()</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prise rapide">
@@ -287,7 +288,7 @@ details.setup summary{cursor:pointer;font-weight:600;font-size:14px;padding:6px 
     --glass-edge:rgba(255,255,255,.16); --glass-hi:rgba(255,255,255,.14);
     --accent-soft:rgba(127,156,255,.20);
     --shadow:0 1px 1px rgba(0,0,0,.3),0 12px 36px rgba(0,0,0,.38);
-    --b1:#2a3f9a; --b2:#5a2f8f; --b3:#145e55; --b4:#7a3b2a;
+    --b1:#1d2c73; --b2:#41226b; --b3:#0f4a44; --b4:#5a2b20;
   }
 }
 :root[data-theme="dark"]{
@@ -296,7 +297,7 @@ details.setup summary{cursor:pointer;font-weight:600;font-size:14px;padding:6px 
   --glass-edge:rgba(255,255,255,.16); --glass-hi:rgba(255,255,255,.14);
   --accent-soft:rgba(127,156,255,.20);
   --shadow:0 1px 1px rgba(0,0,0,.3),0 12px 36px rgba(0,0,0,.38);
-  --b1:#2a3f9a; --b2:#5a2f8f; --b3:#145e55; --b4:#7a3b2a;
+  --b1:#1d2c73; --b2:#41226b; --b3:#0f4a44; --b4:#5a2b20;
 }
 body{background:transparent}
 body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
@@ -545,6 +546,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)!important;box
     </section>
 
     <section class="panel" id="p-reglages" aria-label="Réglages">
+      <div class="card editor" id="theme-card">
+        <h2 class="h2">Apparence</h2>
+        <div class="seg" id="theme-seg" role="group" aria-label="Thème"><button type="button" data-th="dark" aria-pressed="true">Sombre</button><button type="button" data-th="light" aria-pressed="false">Clair</button><button type="button" data-th="auto" aria-pressed="false">Auto</button></div>
+      </div>
       <div class="card editor" id="bk-card">
         <h2 class="h2">Sauvegarde</h2>
         <p class="note" id="bk-state" style="margin:0"></p>
@@ -2400,6 +2405,16 @@ setView(viewFromHash(),false);
 $('#xdraft').value=ls.get('xdraft','');$('#rmsg').value=ls.get('rmsg','');$('#rintent').value=ls.get('rintent','');
 renderComposer();renderEditor();renderSync();renderTasks();renderStyles();renderProv();renderSb();renderPush();pushRefresh();renderCap();nlRender();renderExtract();setMode(X.mode,true);
 checkReminders();renderBk();
+/* thème : sombre par défaut, clair ou automatique au choix */
+function applyTheme(t){
+  var h=document.documentElement;
+  if(t==='auto')h.removeAttribute('data-theme');else h.setAttribute('data-theme',t);
+  var m=document.querySelector('meta[name="theme-color"]');
+  if(m)m.setAttribute('content',t==='light'?'#F2F4F9':(t==='auto'&&!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))?'#F2F4F9':'#0E121A');
+  document.querySelectorAll('#theme-seg [data-th]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.th===t))});
+}
+$('#theme-seg').addEventListener('click',function(e){var b=e.target.closest('[data-th]');if(!b)return;ls.set('theme',b.dataset.th);applyTheme(b.dataset.th)});
+applyTheme(ls.get('theme','dark'));
 if(sbOn())sync();
 setInterval(function(){if(!document.hidden)sync()},30000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)sync()});
