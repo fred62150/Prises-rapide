@@ -387,6 +387,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)!important;box
 .memo .actions{grid-column:1/-1;padding:8px 0 2px}
 .memo.editing{grid-template-columns:1fr}
 @media (max-width:430px){#sync-t{display:none}#sync{padding:0 12px}.hr{gap:6px}#open-trips,#open-carnet{margin-right:0}}
+/* iPhone : les champs date/heure débordaient sur la colonne voisine */
+input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;overflow:hidden;text-align:left}
+input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date-and-time-value{text-align:left;min-height:1.3em;margin:0}
+.when>*{min-width:0}
 </style>
 </head>
 <body>
