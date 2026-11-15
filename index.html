@@ -2852,6 +2852,11 @@ function renderCal(){
   pk.innerHTML=names.length?'<p class="note" style="margin:8px 0 4px">Calendriers affichés :</p>'+names.map(function(c){
     return '<label class="chk"><input type="checkbox" data-cal="'+esc(c)+'"'+(hid.indexOf(c)<0?' checked':'')+'> '+esc(c||'(sans nom)')+' <span class="note">('+cnt[c]+')</span></label>';
   }).join(''):'';
+  var tzn='';try{tzn=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){}
+  pk.innerHTML+='<details style="margin-top:8px"><summary class="note">Contrôle des horaires reçus</summary><p class="note" style="margin:6px 0">Fuseau de cet appareil : '+esc(tzn)+'</p>'+evs.slice(0,30).map(function(e){
+    var s=new Date(e.s),f=new Date(e.e||e.s);
+    return '<p class="note" style="margin:4px 0;overflow-wrap:anywhere">'+esc(String(e.t||'').slice(0,34))+'<br>reçu : '+esc(String(e.s))+' → '+esc(String(e.e||''))+'<br>affiché : '+(isNaN(s)?'illisible':hm(s)+' → '+hm(f))+'</p>';
+  }).join('')+'</details>';
 }
 $('#agenda').addEventListener('click',function(e){if(e.target.closest('#ag-toggle')){ls.set('agopen',!ls.get('agopen',true));renderAgenda()}});
 $('#cal-pick').addEventListener('change',function(e){
