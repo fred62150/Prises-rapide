@@ -645,6 +645,17 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
 
     <section class="panel" id="p-pilotage" aria-label="Pilotage">
       <button type="button" class="back" data-back>‹ Retour aux tâches</button>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button type="button" class="mini primary" id="pl-new">+ Nouvelle action</button></div>
+      <form class="card" id="pl-form" hidden autocomplete="off" style="padding:12px;margin-bottom:12px">
+        <strong id="pl-ft" style="display:block;margin-bottom:8px">Nouvelle action</strong>
+        <label class="fld">Action<input id="pf-text" maxlength="200" placeholder="Ce qui est demandé"></label>
+        <div class="when"><label class="fld">Demandeur<input id="pf-req" list="pl-reqs" maxlength="60" placeholder="Direction, service…"></label><label class="fld">Porteur<input id="pf-own" maxlength="60" placeholder="Moi, une équipe…"></label></div>
+        <div class="when"><label class="fld">Échéance<input type="date" id="pf-due"></label><label class="fld">Statut<select id="pf-st"><option value="">En cours</option><option value="wait">En attente</option><option value="susp">Suspendue</option></select></label></div>
+        <div class="when" id="pf-more" hidden><label class="fld"><span id="pf-bl">Suspendue par</span><input id="pf-by" list="pl-dl" maxlength="120"></label><label class="fld"><span id="pf-dl">Reprise prévue</span><input type="date" id="pf-res"></label></div>
+        <label class="fld" style="margin-top:10px">Notes<textarea class="edit" id="pf-notes" rows="2" maxlength="2000" placeholder="Détails, lien, contact…"></textarea></label>
+        <p class="note err" id="pf-err" hidden style="margin:8px 0 0"></p>
+        <div class="actions" style="margin-top:10px"><button type="submit" class="mini primary">Enregistrer</button><button type="button" class="mini" id="pf-cancel">Annuler</button><button type="button" class="mini" id="pf-back" hidden>Renvoyer aux tâches</button></div>
+      </form>
       <div class="pl-tiles" id="pl-tiles"></div>
       <div class="chips" id="pl-chips" role="group" aria-label="Demandeur" style="margin:0 0 12px"></div>
       <form class="card" id="pl-sheet" hidden autocomplete="off" style="padding:12px;margin-bottom:12px">
@@ -1142,11 +1153,6 @@ function editBox(t){
     '<label class="fld">Rappel<select id="e-rem" data-k="'+(h?'t':'d')+'">'+(h?remOptions(r):remDayOptions(r))+'</select></label></div>'+
     '<div class="when"><label class="fld">Catégorie<select id="e-cat">'+catOptions(t.cat)+'</select></label>'+
     '<label class="fld">Répéter<select id="e-rep">'+repOptions(t.repeat)+'</select></label></div>'+
-    '<div class="when"><label class="fld">Demandeur<input class="edit" id="e-req" list="pl-reqs" maxlength="60" value="'+esc(t.req||'')+'"></label>'+
-    '<label class="fld">Porteur<input class="edit" id="e-own" maxlength="60" value="'+esc(t.owner||'')+'"></label></div>'+
-    '<div class="when"><label class="fld">Statut<select id="e-st"><option value=""'+(!t.st?' selected':'')+'>En cours</option><option value="wait"'+(t.st==='wait'?' selected':'')+'>En attente</option><option value="susp"'+(t.st==='susp'?' selected':'')+'>Suspendue</option></select></label>'+
-    '<label class="fld">Reprise / relance<input type="date" id="e-res" value="'+esc(t.resume||'')+'"></label></div>'+
-    '<label class="fld">Suspendue par / en attente de<input class="edit" id="e-by" maxlength="120" value="'+esc(t.by||'')+'"></label>'+
     '<label class="fld">Notes<textarea class="edit" id="e-notes" maxlength="2000" placeholder="Détails, lien, numéro…">'+esc(t.notes||'')+'</textarea></label>'+
     '<div class="esubs"><span class="lab" style="margin:0">Sous-tâches</span>'+
     S.editSubs.map(function(s,i){return '<div class="esub"><input class="e-sub" data-si="'+i+'" value="'+esc(s.t)+'" maxlength="120" placeholder="Sous-tâche" aria-label="Sous-tâche '+(i+1)+'"><button type="button" class="mini danger" data-act="delsub" data-si="'+i+'" aria-label="Retirer la sous-tâche">✕</button></div>'}).join('')+
@@ -1174,7 +1180,7 @@ function row(t){
         h+='<button class="mini" data-act="imp" data-v="'+o[0]+'" aria-pressed="'+(cur===o[0])+'">'+(o[2]?'<span class="dot '+o[2]+'"></span>':'')+o[1]+'</button>';
       });
       h+='<button class="mini" data-act="edit">Modifier</button>';
-      h+='<button class="mini" data-act="suspend">Suspendre</button>';
+      h+='<button class="mini" data-act="topil">Envoyer vers Pilotage</button>';
       h+='<button class="mini" data-act="snooze" data-s="day">Reporter d’un jour</button>';
       if(dl&&t.due)h+='<button class="mini" data-act="ics">Ajouter au Calendrier</button>';
     }
@@ -1191,8 +1197,8 @@ function renderTasks(){
   renderAgenda();renderPilot();
   var box=$('#list');
   var act=document.activeElement&&document.activeElement.id,keep=null;
-  if($('#edit-field'))keep={t:$('#edit-field').value,d:$('#e-date').value,h:$('#e-time').value,r:$('#e-rem').value,c:$('#e-cat').value,p:$('#e-rep').value,n:$('#e-notes').value,q:$('#e-req').value,w:$('#e-own').value,s:$('#e-st').value,x:$('#e-res').value,y:$('#e-by').value};
-  var all=S.tasks.filter(catOk),open=all.filter(function(t){return !t.done}),done=all.filter(function(t){return t.done});
+  if($('#edit-field'))keep={t:$('#edit-field').value,d:$('#e-date').value,h:$('#e-time').value,r:$('#e-rem').value,c:$('#e-cat').value,p:$('#e-rep').value,n:$('#e-notes').value};
+  var all=S.tasks.filter(catOk).filter(function(t){return !t.pil}),open=all.filter(function(t){return !t.done}),done=all.filter(function(t){return t.done});
   var h='';
   if(S.mode==='connecting'){
     h='<div class="card skl"><div class="sk" style="width:70%"></div><div class="sk" style="width:55%"></div><div class="sk" style="width:62%"></div></div>';
@@ -1224,11 +1230,11 @@ function renderTasks(){
   }
   box.innerHTML=h;
   if($('#edit-field')){
-    if(keep){$('#edit-field').value=keep.t;$('#e-date').value=keep.d;$('#e-time').value=keep.h;fixRem(!!keep.h);$('#e-rem').value=keep.r;$('#e-cat').value=keep.c;$('#e-rep').value=keep.p;$('#e-notes').value=keep.n;$('#e-req').value=keep.q;$('#e-own').value=keep.w;$('#e-st').value=keep.s;$('#e-res').value=keep.x;$('#e-by').value=keep.y;
+    if(keep){$('#edit-field').value=keep.t;$('#e-date').value=keep.d;$('#e-time').value=keep.h;fixRem(!!keep.h);$('#e-rem').value=keep.r;$('#e-cat').value=keep.c;$('#e-rep').value=keep.p;$('#e-notes').value=keep.n;
       var back=act&&$('#'+act);(back||$('#edit-field')).focus()}
     else{$('#edit-field').focus();$('#edit-field').select()}
   }
-  var nOpen=S.tasks.filter(function(t){return !t.done}).length,b=$('#badge');b.textContent=nOpen;b.hidden=!nOpen;
+  var nOpen=S.tasks.filter(function(t){return !t.done&&!t.pil}).length,b=$('#badge');b.textContent=nOpen;b.hidden=!nOpen;
 }
 
 /* ---------- saisie rapide ---------- */
@@ -1293,9 +1299,8 @@ function saveEdit(){
   var due=date?date+(time?'T'+time:''):null;
   var subs=S.editSubs.map(function(x){return {t:String(x.t).trim(),done:!!x.done}}).filter(function(x){return x.t});
   var ec=$('#e-cat').value,er=$('#e-rep').value,en=$('#e-notes').value.trim();
-  var qreq=$('#e-req').value.trim(),qown=$('#e-own').value.trim(),qst=$('#e-st').value,qres=qst?$('#e-res').value:'',qby=qst?$('#e-by').value.trim():'';
   S.edit=null;S.editSubs=[];
-  guard(store.patch(id,{text:text,due:due,remind:(due&&rem!=='')?+rem:null,cat:ec,repeat:due?er:'',notes:en,subs:subs,req:qreq,owner:qown,st:qst,resume:qres,by:qby}));
+  guard(store.patch(id,{text:text,due:due,remind:(due&&rem!=='')?+rem:null,cat:ec,repeat:due?er:'',notes:en,subs:subs}));
   if(S.mode==='cloud')renderTasks();
 }
 function toggleTask(t,id){
@@ -1338,7 +1343,7 @@ $('#list').addEventListener('click',function(e){
     else nd2=ymd(addDays(1))+tail;
     S.open=null;guard(store.patch(id,{due:nd2}));toast('Reporté : '+whenLabel({due:nd2}));
   }
-  else if(act==='suspend'){S.open=null;plSheetOpen(id,'susp');setView('pilotage',true)}
+  else if(act==='topil'){S.open=null;guard(store.patch(id,{pil:true,st:'',by:'',resume:''}));toast('Envoyée vers Pilotage : '+t.text)}
   else if(act==='subtoggle'){
     var si=+btn.dataset.si;
     if(t.subs&&t.subs[si]){var ns=t.subs.map(function(s){return {t:s.t,done:s.done}});ns[si].done=!ns[si].done;guard(store.patch(id,{subs:ns}))}
@@ -2666,7 +2671,7 @@ window.addEventListener('hashchange',function(){setView(viewFromHash(),false)});
 S.pReq='';S.pSheet=null;
 function plSheetOpen(id,mode){
   var t=S.tasks.find(function(x){return x.id===id});if(!t)return;
-  S.pSheet={id:id,mode:mode};
+  S.pSheet={id:id,mode:mode};S.pForm=null;$('#pl-form').hidden=true;
   $('#pl-st').textContent=(mode==='susp'?'Suspendre : ':'Mettre en attente : ')+t.text;
   $('#pl-bl').textContent=mode==='susp'?'Suspendue par':'En attente de';
   $('#pl-dlbl').textContent=mode==='susp'?'Reprise prévue':'Relance prévue';
@@ -2695,7 +2700,7 @@ function plCard(t){
 }
 function renderPilot(){
   var tiles=$('#pl-tiles');if(!tiles)return;
-  var open=S.tasks.filter(function(t){return !t.done}),td=ymd(new Date());
+  var open=S.tasks.filter(function(t){return !t.done&&t.pil}),td=ymd(new Date());
   var run=open.filter(function(t){return !t.st}),susp=open.filter(function(t){return t.st==='susp'}),wait=open.filter(function(t){return t.st==='wait'});
   var late=run.filter(function(t){return groupOf(t)==='late'}).length;
   var rel=open.filter(function(t){return t.st&&t.resume&&t.resume<=td}).length;
@@ -2708,7 +2713,7 @@ function renderPilot(){
   var f=function(t){return !S.pReq||t.req===S.pReq};
   var sec=function(title,items){return items.length?'<div class="pl-sec">'+title+' ('+items.length+')</div>'+items.map(plCard).join(''):''};
   var h=sec('En cours',run.filter(f).sort(cmp))+sec('Suspendues',susp.filter(f).sort(function(a,b){return (a.resume||'9')<(b.resume||'9')?-1:1}))+sec('En attente',wait.filter(f).sort(function(a,b){return (a.resume||'9')<(b.resume||'9')?-1:1}));
-  $('#pl-list').innerHTML=h||'<div class="card empty"><strong>Rien à piloter</strong>Aucune action ouverte pour ce demandeur.</div>';
+  $('#pl-list').innerHTML=h||'<div class="card empty"><strong>Rien à piloter</strong>Ajoutez une action avec « + Nouvelle action », ou envoyez une tâche vers Pilotage depuis ses options.</div>';
 }
 $('#p-pilotage').addEventListener('click',function(e){
   var c=e.target.closest('[data-pr]');if(c){S.pReq=c.dataset.pr;renderPilot();return}
@@ -2718,7 +2723,7 @@ $('#p-pilotage').addEventListener('click',function(e){
   if(a==='susp'||a==='wait')plSheetOpen(id,a);
   else if(a==='back'){guard(store.patch(id,{st:'',by:'',resume:''}));toast('Reprise : '+t.text)}
   else if(a==='done')toggleTask(t,id);
-  else if(a==='edit'){S.edit=id;S.editSubs=(t.subs||[]).map(function(x){return {t:x.t,done:!!x.done}});S.open=null;setView('taches',true);renderTasks()}
+  else if(a==='edit')plFormOpen(id);
 });
 $('#pl-sheet').addEventListener('submit',function(e){
   e.preventDefault();var sh=S.pSheet;if(!sh)return;
@@ -2731,6 +2736,58 @@ $('#pl-sheet').addEventListener('submit',function(e){
   if(t)toast((sh.mode==='susp'?'Suspendue : ':'En attente : ')+t.text);
 });
 $('#pl-by').addEventListener('input',function(){$('#pl-err').hidden=true});
+S.pForm=null;
+function plFormSync(){
+  var st=$('#pf-st').value;
+  $('#pf-more').hidden=!st;
+  $('#pf-bl').textContent=st==='wait'?'En attente de':'Suspendue par';
+  $('#pf-dl').textContent=st==='wait'?'Relance prévue':'Reprise prévue';
+  $('#pf-by').placeholder=st==='wait'?'Une personne ou un service':'L’action qui a pris le dessus';
+  if(st&&!$('#pf-res').value)$('#pf-res').value=ymd(addDays(3));
+}
+function plFormOpen(id){
+  var t=id?S.tasks.find(function(x){return x.id===id}):null;if(id&&!t)return;
+  S.pForm={id:id||null};S.pSheet=null;$('#pl-sheet').hidden=true;
+  $('#pl-ft').textContent=t?'Modifier l’action':'Nouvelle action';
+  $('#pf-text').value=t?t.text:'';
+  $('#pf-req').value=t&&t.req||'';
+  $('#pf-own').value=t&&t.owner||'';
+  $('#pf-due').value=t&&t.due?t.due.slice(0,10):'';
+  $('#pf-st').value=t&&t.st||'';
+  $('#pf-by').value=t&&t.by||'';
+  $('#pf-res').value=t&&t.resume||'';
+  $('#pf-notes').value=t&&t.notes||'';
+  $('#pl-dl').innerHTML=S.tasks.filter(function(x){return !x.done&&x.id!==id}).map(function(x){return '<option value="'+esc(x.text)+'"></option>'}).join('');
+  $('#pf-back').hidden=!t;$('#pf-err').hidden=true;$('#pl-form').hidden=false;
+  plFormSync();
+  try{$('#pl-form').scrollIntoView({block:'nearest'})}catch(e){}
+  $('#pf-text').focus();
+}
+$('#pl-new').addEventListener('click',function(){plFormOpen(null)});
+$('#pf-st').addEventListener('change',plFormSync);
+$('#pf-cancel').addEventListener('click',function(){S.pForm=null;$('#pl-form').hidden=true});
+$('#pf-back').addEventListener('click',function(){
+  var f=S.pForm;if(!f||!f.id)return;
+  var t=S.tasks.find(function(x){return x.id===f.id});
+  S.pForm=null;$('#pl-form').hidden=true;
+  guard(store.patch(f.id,{pil:false,st:'',by:'',resume:''}));
+  if(t)toast('Renvoyée aux tâches : '+t.text);
+});
+$('#pl-form').addEventListener('input',function(){$('#pf-err').hidden=true});
+$('#pl-form').addEventListener('submit',function(e){
+  e.preventDefault();var f=S.pForm;if(!f)return;
+  var tx=$('#pf-text').value.trim(),st=$('#pf-st').value,by=$('#pf-by').value.trim(),res=$('#pf-res').value,dt=$('#pf-due').value,er=$('#pf-err');
+  var fail=function(m,el){er.textContent=m;er.hidden=false;el.focus()};
+  if(!tx){fail('Décrivez l’action.',$('#pf-text'));return}
+  if(st&&!by){fail(st==='susp'?'Indiquez ce qui a pris le dessus.':'Indiquez de qui ou de quoi vous attendez une réponse.',$('#pf-by'));return}
+  if(st&&!res){fail('Indiquez une date.',$('#pf-res'));return}
+  var t=f.id?S.tasks.find(function(x){return x.id===f.id}):null;
+  var due=dt?((t&&t.due&&t.due.slice(0,10)===dt)?t.due:dt):null;
+  var p={text:tx,req:$('#pf-req').value.trim(),owner:$('#pf-own').value.trim(),due:due,st:st,by:st?by:'',resume:st?res:'',notes:$('#pf-notes').value.trim(),pil:true};
+  S.pForm=null;$('#pl-form').hidden=true;
+  if(t){guard(store.patch(t.id,p));toast('Action modifiée')}
+  else{guard(store.add(Object.assign({done:false,star:false,imp:'',remind:null,cat:'',subs:[],repeat:'',created:Date.now()},p)));toast('Action ajoutée à Pilotage')}
+});
 $('#open-pilot').addEventListener('click',function(){setView(S.tab==='pilotage'?'taches':'pilotage',true)});
 
 /* ---------- démarrage ---------- */
