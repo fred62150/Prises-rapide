@@ -279,6 +279,25 @@ details.setup summary{cursor:pointer;font-weight:600;font-size:14px;padding:6px 
 .rt input{width:100%;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);min-height:40px}
 @media (max-width:899px){#open-trips{display:none}}
 #open-trips,#open-carnet{margin-right:8px}
+
+/* pilotage */
+.panels:not([data-view="pilotage"]) #p-pilotage{display:none}
+.panels[data-view="pilotage"] .panel:not(#p-pilotage){display:none}
+@media (min-width:900px){.panels[data-view="pilotage"]{grid-template-columns:minmax(0,720px)}}
+.pl-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.pl-t{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 6px;text-align:center}
+.pl-t b{display:block;font:600 24px/1.1 var(--font-display);font-variant-numeric:tabular-nums}
+.pl-t span{font-size:12px;color:var(--muted)}
+.pl-t.late b{color:var(--danger)}.pl-t.rel b{color:var(--star)}.pl-t.susp b{color:var(--accent)}
+.pl-c{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line-strong);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.pl-c.late{border-left-color:var(--danger)}.pl-c.soon{border-left-color:var(--star)}.pl-c.susp{border-left-color:var(--accent)}
+.pl-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.pl-h strong{font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.pl-h em{font-style:normal;font-size:12px;color:var(--muted);white-space:nowrap}
+.pl-h em.late{color:var(--danger)}
+.pl-m{font-size:12.5px;color:var(--muted);margin:4px 0 8px}
+.pl-c .actions{padding:0!important;margin:0!important}
+.pl-sec{margin:14px 0 6px 2px;font:600 13px/1 var(--font-body);color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
 </style>
 <style id="glass">
 /* Thème verre poli : surfaces translucides, flou d'arrière-plan, reflets fins. Basé sur les variables, donc clair et sombre. */
@@ -428,6 +447,7 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
     </div>
     <div class="hr">
       <button type="button" class="pill" id="sync" data-s="off"><i></i><span id="sync-t">Sur l’appareil</span></button>
+      <button type="button" class="gear" id="open-pilot" aria-label="Pilotage" title="Pilotage"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/></svg></button>
       <button type="button" class="gear" id="open-trips" aria-label="Trajets" title="Trajets"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/></svg></button>
       <button type="button" class="gear" id="open-carnet" aria-label="Carnet (mémos)" title="Carnet (mémos)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h11a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6z"/><path d="M6 3v18M10 8h5M10 12h5"/></svg></button>
       <button type="button" class="gear" id="open-settings" aria-label="Réglages"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg></button>
@@ -623,6 +643,22 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
       <details class="card hist"><summary id="tr-rsum">Distances mémorisées</summary><div class="editor" id="tr-routes"></div></details>
     </section>
 
+    <section class="panel" id="p-pilotage" aria-label="Pilotage">
+      <button type="button" class="back" data-back>‹ Retour aux tâches</button>
+      <div class="pl-tiles" id="pl-tiles"></div>
+      <div class="chips" id="pl-chips" role="group" aria-label="Demandeur" style="margin:0 0 12px"></div>
+      <form class="card" id="pl-sheet" hidden autocomplete="off" style="padding:12px;margin-bottom:12px">
+        <strong id="pl-st" style="display:block;margin-bottom:8px;overflow-wrap:anywhere">Suspendre</strong>
+        <div class="when">
+          <label class="fld"><span id="pl-bl">Suspendue par</span><input id="pl-by" list="pl-dl" maxlength="120" placeholder="L’action qui a pris le dessus"></label>
+          <label class="fld"><span id="pl-dlbl">Reprise prévue</span><input type="date" id="pl-date"></label>
+        </div>
+        <p class="note err" id="pl-err" hidden style="margin:8px 0 0"></p>
+        <div class="actions" style="margin-top:10px"><button type="submit" class="mini primary">Valider</button><button type="button" class="mini" id="pl-cancel">Annuler</button></div>
+      </form>
+      <div id="pl-list"></div>
+      <datalist id="pl-dl"></datalist><datalist id="pl-reqs"></datalist>
+    </section>
     <section class="panel" id="p-carnet" aria-label="Carnet">
       <button type="button" class="back" data-back>‹ Retour aux tâches</button>
       <div class="seg" id="cseg" role="group" aria-label="Section du carnet" style="margin-bottom:12px;align-self:flex-start"><button type="button" data-cs="memos" aria-pressed="true">Mémos</button><button type="button" data-cs="meets" aria-pressed="false">Réunions</button></div>
@@ -1023,11 +1059,13 @@ function nextDue(t){
 function metaHtml(t){
   var h='';
   if(t.due){
-    var late=!t.done&&groupOf(t)==='late';
+    var late=!t.done&&!t.st&&groupOf(t)==='late';
     var bell=(t.remind!=null&&!t.done)?'<span class="bell" title="'+esc(remLabel(t))+'">'+IC.bell+'</span>':'';
     h+='<span class="meta'+(late?' late':'')+'">'+esc(whenLabel(t))+bell+'</span>';
   }
   if(t.cat)h+='<span class="tg '+esc(t.cat)+'">'+(t.cat==='pro'?'Pro':'Perso')+'</span>';
+  if(t.st&&!t.done)h+='<span class="tg">'+(t.st==='susp'?'Suspendue':'En attente')+(t.resume?' → '+esc(whenLabel({due:t.resume})):'')+'</span>';
+  if(t.req)h+='<span class="tg">'+esc(t.req)+'</span>';
   if(t.repeat&&repLabel(t.repeat))h+='<span class="tg">↻ '+esc(repLabel(t.repeat))+'</span>';
   var n=t.subs?t.subs.length:0;
   if(n)h+='<span class="tg">'+t.subs.filter(function(x){return x.done}).length+'/'+n+'</span>';
@@ -1104,6 +1142,11 @@ function editBox(t){
     '<label class="fld">Rappel<select id="e-rem" data-k="'+(h?'t':'d')+'">'+(h?remOptions(r):remDayOptions(r))+'</select></label></div>'+
     '<div class="when"><label class="fld">Catégorie<select id="e-cat">'+catOptions(t.cat)+'</select></label>'+
     '<label class="fld">Répéter<select id="e-rep">'+repOptions(t.repeat)+'</select></label></div>'+
+    '<div class="when"><label class="fld">Demandeur<input class="edit" id="e-req" list="pl-reqs" maxlength="60" value="'+esc(t.req||'')+'"></label>'+
+    '<label class="fld">Porteur<input class="edit" id="e-own" maxlength="60" value="'+esc(t.owner||'')+'"></label></div>'+
+    '<div class="when"><label class="fld">Statut<select id="e-st"><option value=""'+(!t.st?' selected':'')+'>En cours</option><option value="wait"'+(t.st==='wait'?' selected':'')+'>En attente</option><option value="susp"'+(t.st==='susp'?' selected':'')+'>Suspendue</option></select></label>'+
+    '<label class="fld">Reprise / relance<input type="date" id="e-res" value="'+esc(t.resume||'')+'"></label></div>'+
+    '<label class="fld">Suspendue par / en attente de<input class="edit" id="e-by" maxlength="120" value="'+esc(t.by||'')+'"></label>'+
     '<label class="fld">Notes<textarea class="edit" id="e-notes" maxlength="2000" placeholder="Détails, lien, numéro…">'+esc(t.notes||'')+'</textarea></label>'+
     '<div class="esubs"><span class="lab" style="margin:0">Sous-tâches</span>'+
     S.editSubs.map(function(s,i){return '<div class="esub"><input class="e-sub" data-si="'+i+'" value="'+esc(s.t)+'" maxlength="120" placeholder="Sous-tâche" aria-label="Sous-tâche '+(i+1)+'"><button type="button" class="mini danger" data-act="delsub" data-si="'+i+'" aria-label="Retirer la sous-tâche">✕</button></div>'}).join('')+
@@ -1131,6 +1174,7 @@ function row(t){
         h+='<button class="mini" data-act="imp" data-v="'+o[0]+'" aria-pressed="'+(cur===o[0])+'">'+(o[2]?'<span class="dot '+o[2]+'"></span>':'')+o[1]+'</button>';
       });
       h+='<button class="mini" data-act="edit">Modifier</button>';
+      h+='<button class="mini" data-act="suspend">Suspendre</button>';
       h+='<button class="mini" data-act="snooze" data-s="day">Reporter d’un jour</button>';
       if(dl&&t.due)h+='<button class="mini" data-act="ics">Ajouter au Calendrier</button>';
     }
@@ -1144,10 +1188,10 @@ function cmp(a,b){
   return (b.created||0)-(a.created||0);
 }
 function renderTasks(){
-  renderAgenda();
+  renderAgenda();renderPilot();
   var box=$('#list');
   var act=document.activeElement&&document.activeElement.id,keep=null;
-  if($('#edit-field'))keep={t:$('#edit-field').value,d:$('#e-date').value,h:$('#e-time').value,r:$('#e-rem').value,c:$('#e-cat').value,p:$('#e-rep').value,n:$('#e-notes').value};
+  if($('#edit-field'))keep={t:$('#edit-field').value,d:$('#e-date').value,h:$('#e-time').value,r:$('#e-rem').value,c:$('#e-cat').value,p:$('#e-rep').value,n:$('#e-notes').value,q:$('#e-req').value,w:$('#e-own').value,s:$('#e-st').value,x:$('#e-res').value,y:$('#e-by').value};
   var all=S.tasks.filter(catOk),open=all.filter(function(t){return !t.done}),done=all.filter(function(t){return t.done});
   var h='';
   if(S.mode==='connecting'){
@@ -1180,7 +1224,7 @@ function renderTasks(){
   }
   box.innerHTML=h;
   if($('#edit-field')){
-    if(keep){$('#edit-field').value=keep.t;$('#e-date').value=keep.d;$('#e-time').value=keep.h;fixRem(!!keep.h);$('#e-rem').value=keep.r;$('#e-cat').value=keep.c;$('#e-rep').value=keep.p;$('#e-notes').value=keep.n;
+    if(keep){$('#edit-field').value=keep.t;$('#e-date').value=keep.d;$('#e-time').value=keep.h;fixRem(!!keep.h);$('#e-rem').value=keep.r;$('#e-cat').value=keep.c;$('#e-rep').value=keep.p;$('#e-notes').value=keep.n;$('#e-req').value=keep.q;$('#e-own').value=keep.w;$('#e-st').value=keep.s;$('#e-res').value=keep.x;$('#e-by').value=keep.y;
       var back=act&&$('#'+act);(back||$('#edit-field')).focus()}
     else{$('#edit-field').focus();$('#edit-field').select()}
   }
@@ -1249,25 +1293,12 @@ function saveEdit(){
   var due=date?date+(time?'T'+time:''):null;
   var subs=S.editSubs.map(function(x){return {t:String(x.t).trim(),done:!!x.done}}).filter(function(x){return x.t});
   var ec=$('#e-cat').value,er=$('#e-rep').value,en=$('#e-notes').value.trim();
+  var qreq=$('#e-req').value.trim(),qown=$('#e-own').value.trim(),qst=$('#e-st').value,qres=qst?$('#e-res').value:'',qby=qst?$('#e-by').value.trim():'';
   S.edit=null;S.editSubs=[];
-  guard(store.patch(id,{text:text,due:due,remind:(due&&rem!=='')?+rem:null,cat:ec,repeat:due?er:'',notes:en,subs:subs}));
+  guard(store.patch(id,{text:text,due:due,remind:(due&&rem!=='')?+rem:null,cat:ec,repeat:due?er:'',notes:en,subs:subs,req:qreq,owner:qown,st:qst,resume:qres,by:qby}));
   if(S.mode==='cloud')renderTasks();
 }
-$('#list').addEventListener('click',function(e){
-  var btn=e.target.closest('[data-act]');if(!btn)return;
-  var act=btn.dataset.act;
-  if(act==='showdone'){S.showDone=!S.showDone;S.confirmClear=false;renderTasks();return}
-  if(act==='exportall'){saveIcs('taches-prise-rapide.ics',S.tasks.filter(function(t){return !t.done&&t.due}));return}
-  if(act==='clear'){
-    if(!S.confirmClear){S.confirmClear=true;renderTasks();return}
-    var ids=S.tasks.filter(function(t){return t.done}).map(function(t){return t.id});
-    S.confirmClear=false;
-    ids.reduce(function(p,id){return p.then(function(){return store.del(id)})},Promise.resolve()).catch(function(){toast('Suppression incomplète.')});
-    return;
-  }
-  var li=btn.closest('.task');if(!li)return;
-  var id=li.dataset.id,t=S.tasks.find(function(x){return x.id===id});if(!t)return;
-  if(act==='toggle'){
+function toggleTask(t,id){
     S.open=null;
     if(!t.done){
       var upd={done:true,doneAt:Date.now()},nd=t.repeat&&t.due?nextDue(t):null;
@@ -1283,7 +1314,22 @@ $('#list').addEventListener('click',function(e){
       guard(store.patch(id,upd2));
     }
     if(S.mode==='cloud')renderTasks()
+}
+$('#list').addEventListener('click',function(e){
+  var btn=e.target.closest('[data-act]');if(!btn)return;
+  var act=btn.dataset.act;
+  if(act==='showdone'){S.showDone=!S.showDone;S.confirmClear=false;renderTasks();return}
+  if(act==='exportall'){saveIcs('taches-prise-rapide.ics',S.tasks.filter(function(t){return !t.done&&t.due}));return}
+  if(act==='clear'){
+    if(!S.confirmClear){S.confirmClear=true;renderTasks();return}
+    var ids=S.tasks.filter(function(t){return t.done}).map(function(t){return t.id});
+    S.confirmClear=false;
+    ids.reduce(function(p,id){return p.then(function(){return store.del(id)})},Promise.resolve()).catch(function(){toast('Suppression incomplète.')});
+    return;
   }
+  var li=btn.closest('.task');if(!li)return;
+  var id=li.dataset.id,t=S.tasks.find(function(x){return x.id===id});if(!t)return;
+  if(act==='toggle'){toggleTask(t,id)}
   else if(act==='snooze'){
     var sk=btn.dataset.s,tail=hasTime(t)?t.due.slice(10):'',nd2;
     if(sk==='1h'){var d0=new Date(Date.now()+3600000);d0.setMinutes(Math.ceil(d0.getMinutes()/5)*5,0,0);nd2=ymd(d0)+'T'+hm(d0)}
@@ -1292,6 +1338,7 @@ $('#list').addEventListener('click',function(e){
     else nd2=ymd(addDays(1))+tail;
     S.open=null;guard(store.patch(id,{due:nd2}));toast('Reporté : '+whenLabel({due:nd2}));
   }
+  else if(act==='suspend'){S.open=null;plSheetOpen(id,'susp');setView('pilotage',true)}
   else if(act==='subtoggle'){
     var si=+btn.dataset.si;
     if(t.subs&&t.subs[si]){var ns=t.subs.map(function(s){return {t:s.t,done:s.done}});ns[si].done=!ns[si].done;guard(store.patch(id,{subs:ns}))}
@@ -2089,7 +2136,7 @@ $('#copy-ex').addEventListener('click',function(){
 });
 
 /* ---------- onglets ---------- */
-var VIEWS=['taches','relecture','trajets','carnet','reglages'];
+var VIEWS=['taches','relecture','trajets','carnet','reglages','pilotage'];
 
 /* ---------- étape 3 : extraire des tâches / aider à répondre ---------- */
 var X={busy:false,error:'',items:null,note:'',mode:ls.get('mode','review')};
@@ -2614,6 +2661,77 @@ $('#open-trips').addEventListener('click',function(){setView(S.tab==='trajets'?'
 $('#open-settings').addEventListener('click',function(){setView(S.tab==='reglages'?'taches':'reglages',true)});
 $('#sync').addEventListener('click',function(){setView('reglages',true)});
 window.addEventListener('hashchange',function(){setView(viewFromHash(),false)});
+
+/* ---------- pilotage ---------- */
+S.pReq='';S.pSheet=null;
+function plSheetOpen(id,mode){
+  var t=S.tasks.find(function(x){return x.id===id});if(!t)return;
+  S.pSheet={id:id,mode:mode};
+  $('#pl-st').textContent=(mode==='susp'?'Suspendre : ':'Mettre en attente : ')+t.text;
+  $('#pl-bl').textContent=mode==='susp'?'Suspendue par':'En attente de';
+  $('#pl-dlbl').textContent=mode==='susp'?'Reprise prévue':'Relance prévue';
+  $('#pl-by').placeholder=mode==='susp'?'L’action qui a pris le dessus':'Une personne ou un service';
+  $('#pl-by').value=(t.st===mode&&t.by)||'';
+  $('#pl-date').min=ymd(new Date());
+  $('#pl-date').value=(t.st===mode&&t.resume)||ymd(addDays(3));
+  $('#pl-dl').innerHTML=S.tasks.filter(function(x){return !x.done&&x.id!==id}).map(function(x){return '<option value="'+esc(x.text)+'"></option>'}).join('');
+  $('#pl-err').hidden=true;$('#pl-sheet').hidden=false;
+  try{$('#pl-sheet').scrollIntoView({block:'nearest'})}catch(e){}
+}
+function plCard(t){
+  var td=ymd(new Date()),late=!t.st&&groupOf(t)==='late',soon=!!t.st&&!!t.resume&&t.resume<=td;
+  var right=t.st?(t.resume?(t.st==='susp'?'Reprise ':'Relance ')+whenLabel({due:t.resume}):''):(t.due?whenLabel(t):'');
+  var meta=[];
+  if(t.req)meta.push(esc(t.req));
+  if(t.owner)meta.push('Porteur : '+esc(t.owner));
+  if(t.st==='susp'&&t.by)meta.push('Suspendue par : '+esc(t.by));
+  if(t.st==='wait'&&t.by)meta.push('En attente de : '+esc(t.by));
+  var b='';
+  if(t.st)b+='<button type="button" class="mini" data-pa="back" data-id="'+esc(t.id)+'">Reprendre</button>';
+  else b+='<button type="button" class="mini" data-pa="susp" data-id="'+esc(t.id)+'">Suspendre</button><button type="button" class="mini" data-pa="wait" data-id="'+esc(t.id)+'">En attente</button>';
+  b+='<button type="button" class="mini" data-pa="done" data-id="'+esc(t.id)+'">Terminer</button><button type="button" class="mini" data-pa="edit" data-id="'+esc(t.id)+'">Modifier</button>';
+  return '<div class="pl-c'+(late?' late':'')+(t.st==='susp'?' susp':'')+(soon?' soon':'')+'"><div class="pl-h"><strong>'+esc(t.text)+'</strong>'+(right?'<em class="'+(late?'late':'')+'">'+esc(right)+'</em>':'')+'</div>'+
+    '<div class="pl-m">'+(meta.length?meta.join(' · '):'Aucun demandeur renseigné')+'</div><div class="actions" style="margin:0">'+b+'</div></div>';
+}
+function renderPilot(){
+  var tiles=$('#pl-tiles');if(!tiles)return;
+  var open=S.tasks.filter(function(t){return !t.done}),td=ymd(new Date());
+  var run=open.filter(function(t){return !t.st}),susp=open.filter(function(t){return t.st==='susp'}),wait=open.filter(function(t){return t.st==='wait'});
+  var late=run.filter(function(t){return groupOf(t)==='late'}).length;
+  var rel=open.filter(function(t){return t.st&&t.resume&&t.resume<=td}).length;
+  tiles.innerHTML='<div class="pl-t late"><b>'+late+'</b><span>En retard</span></div><div class="pl-t rel"><b>'+rel+'</b><span>À relancer</span></div><div class="pl-t susp"><b>'+susp.length+'</b><span>Suspendues</span></div>';
+  var reqs=[];open.forEach(function(t){if(t.req&&reqs.indexOf(t.req)<0)reqs.push(t.req)});
+  reqs.sort(function(a,b){return a.localeCompare(b,'fr')});
+  if(S.pReq&&reqs.indexOf(S.pReq)<0)S.pReq='';
+  $('#pl-reqs').innerHTML=reqs.map(function(r){return '<option value="'+esc(r)+'"></option>'}).join('');
+  $('#pl-chips').innerHTML=['']. concat(reqs).map(function(r){return '<button type="button" class="chip" data-pr="'+esc(r)+'" aria-pressed="'+(S.pReq===r)+'">'+(r?esc(r):'Tous')+'</button>'}).join('');
+  var f=function(t){return !S.pReq||t.req===S.pReq};
+  var sec=function(title,items){return items.length?'<div class="pl-sec">'+title+' ('+items.length+')</div>'+items.map(plCard).join(''):''};
+  var h=sec('En cours',run.filter(f).sort(cmp))+sec('Suspendues',susp.filter(f).sort(function(a,b){return (a.resume||'9')<(b.resume||'9')?-1:1}))+sec('En attente',wait.filter(f).sort(function(a,b){return (a.resume||'9')<(b.resume||'9')?-1:1}));
+  $('#pl-list').innerHTML=h||'<div class="card empty"><strong>Rien à piloter</strong>Aucune action ouverte pour ce demandeur.</div>';
+}
+$('#p-pilotage').addEventListener('click',function(e){
+  var c=e.target.closest('[data-pr]');if(c){S.pReq=c.dataset.pr;renderPilot();return}
+  if(e.target.closest('#pl-cancel')){S.pSheet=null;$('#pl-sheet').hidden=true;return}
+  var b=e.target.closest('[data-pa]');if(!b)return;
+  var id=b.dataset.id,a=b.dataset.pa,t=S.tasks.find(function(x){return x.id===id});if(!t)return;
+  if(a==='susp'||a==='wait')plSheetOpen(id,a);
+  else if(a==='back'){guard(store.patch(id,{st:'',by:'',resume:''}));toast('Reprise : '+t.text)}
+  else if(a==='done')toggleTask(t,id);
+  else if(a==='edit'){S.edit=id;S.editSubs=(t.subs||[]).map(function(x){return {t:x.t,done:!!x.done}});S.open=null;setView('taches',true);renderTasks()}
+});
+$('#pl-sheet').addEventListener('submit',function(e){
+  e.preventDefault();var sh=S.pSheet;if(!sh)return;
+  var by=$('#pl-by').value.trim(),dt=$('#pl-date').value,er=$('#pl-err');
+  if(!by){er.textContent=sh.mode==='susp'?'Indiquez ce qui a pris le dessus.':'Indiquez de qui ou de quoi vous attendez une réponse.';er.hidden=false;$('#pl-by').focus();return}
+  if(!dt){er.textContent='Indiquez une date.';er.hidden=false;$('#pl-date').focus();return}
+  var t=S.tasks.find(function(x){return x.id===sh.id});
+  S.pSheet=null;$('#pl-sheet').hidden=true;
+  guard(store.patch(sh.id,{st:sh.mode,by:by,resume:dt}));
+  if(t)toast((sh.mode==='susp'?'Suspendue : ':'En attente : ')+t.text);
+});
+$('#pl-by').addEventListener('input',function(){$('#pl-err').hidden=true});
+$('#open-pilot').addEventListener('click',function(){setView(S.tab==='pilotage'?'taches':'pilotage',true)});
 
 /* ---------- démarrage ---------- */
 if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)navigator.serviceWorker.register('sw.js').catch(function(){});
