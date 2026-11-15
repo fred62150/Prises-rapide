@@ -297,6 +297,8 @@ details.setup summary{cursor:pointer;font-weight:600;font-size:14px;padding:6px 
 .pl-h em.late{color:var(--danger)}
 .pl-m{font-size:12.5px;color:var(--muted);margin:4px 0 8px}
 .pl-c .actions{padding:0!important;margin:0!important}
+.pl-c.imp-urgent{box-shadow:inset 0 0 0 1px var(--danger)}
+.pl-m .impt{margin:0 6px 0 0;display:inline-block}
 .pl-sec{margin:14px 0 6px 2px;font:600 13px/1 var(--font-body);color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
 </style>
 <style id="glass">
@@ -649,15 +651,17 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
       <form class="card" id="pl-form" hidden autocomplete="off" style="padding:12px;margin-bottom:12px">
         <strong id="pl-ft" style="display:block;margin-bottom:8px">Nouvelle action</strong>
         <label class="fld">Action<input id="pf-text" maxlength="200" placeholder="Ce qui est demandé"></label>
-        <div class="when"><label class="fld">Demandeur<input id="pf-req" list="pl-reqs" maxlength="60" placeholder="Direction, service…"></label><label class="fld">Porteur<input id="pf-own" maxlength="60" placeholder="Moi, une équipe…"></label></div>
-        <div class="when"><label class="fld">Échéance<input type="date" id="pf-due"></label><label class="fld">Statut<select id="pf-st"><option value="">En cours</option><option value="wait">En attente</option><option value="susp">Suspendue</option></select></label></div>
+        <div class="when"><label class="fld">Demandeur<select id="pf-req"></select><input id="pf-req-n" maxlength="60" placeholder="Nouveau demandeur" hidden></label><label class="fld">Porteur<select id="pf-own"></select><input id="pf-own-n" maxlength="60" placeholder="Nouveau porteur" hidden></label></div>
+        <div class="when"><label class="fld">Importance<select id="pf-imp"><option value="">Normale</option><option value="important">Important</option><option value="urgent">Urgent</option><option value="low">Faible</option></select></label><label class="fld">Échéance<input type="date" id="pf-due"></label></div>
+        <div class="when"><label class="fld">Statut<select id="pf-st"><option value="">En cours</option><option value="wait">En attente</option><option value="susp">Suspendue</option></select></label></div>
         <div class="when" id="pf-more" hidden><label class="fld"><span id="pf-bl">Suspendue par</span><input id="pf-by" list="pl-dl" maxlength="120"></label><label class="fld"><span id="pf-dl">Reprise prévue</span><input type="date" id="pf-res"></label></div>
         <label class="fld" style="margin-top:10px">Notes<textarea class="edit" id="pf-notes" rows="2" maxlength="2000" placeholder="Détails, lien, contact…"></textarea></label>
         <p class="note err" id="pf-err" hidden style="margin:8px 0 0"></p>
         <div class="actions" style="margin-top:10px"><button type="submit" class="mini primary">Enregistrer</button><button type="button" class="mini" id="pf-cancel">Annuler</button><button type="button" class="mini" id="pf-back" hidden>Renvoyer aux tâches</button></div>
       </form>
       <div class="pl-tiles" id="pl-tiles"></div>
-      <div class="chips" id="pl-chips" role="group" aria-label="Demandeur" style="margin:0 0 12px"></div>
+      <div class="chips" id="pl-chips" role="group" aria-label="Demandeur" style="margin:0 0 8px"></div>
+      <div class="chips" id="pl-imps" role="group" aria-label="Importance" style="margin:0 0 12px"></div>
       <form class="card" id="pl-sheet" hidden autocomplete="off" style="padding:12px;margin-bottom:12px">
         <strong id="pl-st" style="display:block;margin-bottom:8px;overflow-wrap:anywhere">Suspendre</strong>
         <div class="when">
@@ -736,6 +740,13 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
           <p class="note" id="bk-imp-t" style="margin:0"></p>
           <div class="actions"><button type="button" class="mini primary" id="bk-merge">Fusionner avec l’existant</button><button type="button" class="mini danger" id="bk-replace">Remplacer l’existant</button><button type="button" class="mini" id="bk-cancel">Annuler</button></div>
         </div>
+      </div>
+      <div class="card editor">
+        <h2 class="h2">Pilotage : listes</h2>
+        <p class="note" style="margin:0">Un nom par ligne. Ils remplissent les listes déroulantes « Demandeur » et « Porteur ». Un nouveau nom saisi dans le formulaire s’ajoute tout seul.</p>
+        <label class="fld">Demandeurs<textarea class="edit" id="pls-req" rows="4" maxlength="3000" placeholder="Direction&#10;Service RH"></textarea></label>
+        <label class="fld">Porteurs<textarea class="edit" id="pls-own" rows="4" maxlength="3000" placeholder="Moi&#10;Équipe support"></textarea></label>
+        <div class="actions" style="padding:0"><button type="button" class="mini primary" id="pls-save">Enregistrer les listes</button></div>
       </div>
       <div class="card editor">
         <h2 class="h2">Synchronisation</h2>
@@ -1458,7 +1469,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeIcs()})
 
 /* ---------- relecture : styles ---------- */
 function nocal(x){return !x.cal}
-function allStyles(){return PRESETS.concat(S.styles.filter(function(s){return !s.tpl&&!s.trip&&!s.route&&!s.cal&&!s.memo&&!s.meet}))}
+function allStyles(){return PRESETS.concat(S.styles.filter(function(s){return !s.tpl&&!s.trip&&!s.route&&!s.cal&&!s.memo&&!s.meet&&!s.plist}))}
 function curStyle(){return allStyles().find(function(s){return s.id===S.styleId})}
 function renderStyles(){
   renderHist();renderTrips();
@@ -2637,7 +2648,7 @@ $('#bk-file').addEventListener('change',function(){
   r.onload=function(){
     var d=bkRead(String(r.result));
     if(!d){toast('Ce fichier n’est pas une sauvegarde Prise rapide.',3600);return}
-    var nt=d.styles.filter(function(x){return x.trip}).length,nm=d.styles.filter(function(x){return x.tpl}).length,ns=d.styles.filter(function(x){return !x.trip&&!x.route&&!x.tpl&&!x.memo&&!x.cal&&!x.meet}).length,nme=d.styles.filter(function(x){return x.memo}).length,nmt=d.styles.filter(function(x){return x.meet}).length;
+    var nt=d.styles.filter(function(x){return x.trip}).length,nm=d.styles.filter(function(x){return x.tpl}).length,ns=d.styles.filter(function(x){return !x.trip&&!x.route&&!x.tpl&&!x.memo&&!x.cal&&!x.meet&&!x.plist}).length,nme=d.styles.filter(function(x){return x.memo}).length,nmt=d.styles.filter(function(x){return x.meet}).length;
     bkPending=d;bkRepArm=false;$('#bk-replace').textContent='Remplacer l’existant';
     $('#bk-imp-t').textContent='Fichier du '+(d.date?bkDate(d.date):'?')+' : '+d.tasks.length+' tâche(s), '+ns+' style(s), '+nm+' modèle(s), '+nt+' trajet(s), '+nme+' mémo(s), '+nmt+' réunion(s).';
     $('#bk-imp').hidden=false;
@@ -2668,7 +2679,29 @@ $('#sync').addEventListener('click',function(){setView('reglages',true)});
 window.addEventListener('hashchange',function(){setView(viewFromHash(),false)});
 
 /* ---------- pilotage ---------- */
-S.pReq='';S.pSheet=null;
+S.pReq='';S.pImp='';S.pSheet=null;
+function plLists(){var d=S.styles.find(function(x){return x.plist});return {id:d&&d.id,req:(d&&Array.isArray(d.req)?d.req:[]),own:(d&&Array.isArray(d.own)?d.own:[])}}
+function plClean(a){var o=[];(a||[]).forEach(function(x){x=String(x||'').trim().slice(0,60);if(x&&o.indexOf(x)<0)o.push(x)});return o.slice(0,100)}
+function plSaveLists(req,own){
+  req=plClean(req);own=plClean(own);var d=S.styles.find(function(x){return x.plist});
+  if(d)guard(store.patch(d.id,{req:req,own:own}));else guard(store.addStyle({plist:true,req:req,own:own,created:0}));
+}
+function plFillSel(id,list,cur){
+  var sel=$('#'+id),l=list.slice();if(cur&&l.indexOf(cur)<0)l.push(cur);
+  sel.innerHTML='<option value="">(non renseigné)</option>'+l.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>'}).join('')+'<option value="__new">+ Autre…</option>';
+  sel.value=cur||'';$('#'+id+'-n').hidden=true;$('#'+id+'-n').value='';
+}
+function plVal(id){var v=$('#'+id).value;return v==='__new'?$('#'+id+'-n').value.trim():v}
+['pf-req','pf-own'].forEach(function(id){$('#'+id).addEventListener('change',function(){var n=$('#'+id+'-n');n.hidden=this.value!=='__new';if(!n.hidden)n.focus()})});
+function renderPls(){
+  var L=plLists(),a=$('#pls-req'),b=$('#pls-own');if(!a)return;
+  if(document.activeElement!==a)a.value=L.req.join('\n');
+  if(document.activeElement!==b)b.value=L.own.join('\n');
+}
+$('#pls-save').addEventListener('click',function(){
+  plSaveLists($('#pls-req').value.split('\n'),$('#pls-own').value.split('\n'));
+  $('#pls-req').blur();$('#pls-own').blur();toast('Listes enregistrées');setTimeout(renderPls,50);
+});
 function plSheetOpen(id,mode){
   var t=S.tasks.find(function(x){return x.id===id});if(!t)return;
   S.pSheet={id:id,mode:mode};S.pForm=null;$('#pl-form').hidden=true;
@@ -2695,8 +2728,10 @@ function plCard(t){
   if(t.st)b+='<button type="button" class="mini" data-pa="back" data-id="'+esc(t.id)+'">Reprendre</button>';
   else b+='<button type="button" class="mini" data-pa="susp" data-id="'+esc(t.id)+'">Suspendre</button><button type="button" class="mini" data-pa="wait" data-id="'+esc(t.id)+'">En attente</button>';
   b+='<button type="button" class="mini" data-pa="done" data-id="'+esc(t.id)+'">Terminer</button><button type="button" class="mini" data-pa="edit" data-id="'+esc(t.id)+'">Modifier</button>';
-  return '<div class="pl-c'+(late?' late':'')+(t.st==='susp'?' susp':'')+(soon?' soon':'')+'"><div class="pl-h"><strong>'+esc(t.text)+'</strong>'+(right?'<em class="'+(late?'late':'')+'">'+esc(right)+'</em>':'')+'</div>'+
-    '<div class="pl-m">'+(meta.length?meta.join(' · '):'Aucun demandeur renseigné')+'</div><div class="actions" style="margin:0">'+b+'</div></div>';
+  var ci=impOf(t),tag=impTag(t);
+  b+='<button type="button" class="mini" data-pa="imp" data-id="'+esc(t.id)+'">Importance : '+esc(ci?IMP_LBL[ci]:'Normale')+'</button>';
+  return '<div class="pl-c'+(late?' late':'')+(t.st==='susp'?' susp':'')+(soon?' soon':'')+(ci==='urgent'?' imp-urgent':'')+'"><div class="pl-h"><strong>'+esc(t.text)+'</strong>'+(right?'<em class="'+(late?'late':'')+'">'+esc(right)+'</em>':'')+'</div>'+
+    '<div class="pl-m">'+tag+(meta.length?meta.join(' · '):'Aucun demandeur renseigné')+'</div><div class="actions" style="margin:0">'+b+'</div></div>';
 }
 function renderPilot(){
   var tiles=$('#pl-tiles');if(!tiles)return;
@@ -2710,13 +2745,16 @@ function renderPilot(){
   if(S.pReq&&reqs.indexOf(S.pReq)<0)S.pReq='';
   $('#pl-reqs').innerHTML=reqs.map(function(r){return '<option value="'+esc(r)+'"></option>'}).join('');
   $('#pl-chips').innerHTML=['']. concat(reqs).map(function(r){return '<button type="button" class="chip" data-pr="'+esc(r)+'" aria-pressed="'+(S.pReq===r)+'">'+(r?esc(r):'Tous')+'</button>'}).join('');
-  var f=function(t){return !S.pReq||t.req===S.pReq};
+  $('#pl-imps').innerHTML=[['','Toutes importances'],['urgent','Urgent'],['important','Important']].map(function(o){return '<button type="button" class="chip" data-pi="'+o[0]+'" aria-pressed="'+(S.pImp===o[0])+'">'+o[1]+'</button>'}).join('');
+  renderPls();
+  var f=function(t){return (!S.pReq||t.req===S.pReq)&&(!S.pImp||impOf(t)===S.pImp)};
   var sec=function(title,items){return items.length?'<div class="pl-sec">'+title+' ('+items.length+')</div>'+items.map(plCard).join(''):''};
   var h=sec('En cours',run.filter(f).sort(cmp))+sec('Suspendues',susp.filter(f).sort(function(a,b){return (a.resume||'9')<(b.resume||'9')?-1:1}))+sec('En attente',wait.filter(f).sort(function(a,b){return (a.resume||'9')<(b.resume||'9')?-1:1}));
   $('#pl-list').innerHTML=h||'<div class="card empty"><strong>Rien à piloter</strong>Ajoutez une action avec « + Nouvelle action », ou envoyez une tâche vers Pilotage depuis ses options.</div>';
 }
 $('#p-pilotage').addEventListener('click',function(e){
   var c=e.target.closest('[data-pr]');if(c){S.pReq=c.dataset.pr;renderPilot();return}
+  var ci=e.target.closest('[data-pi]');if(ci){S.pImp=ci.dataset.pi;renderPilot();return}
   if(e.target.closest('#pl-cancel')){S.pSheet=null;$('#pl-sheet').hidden=true;return}
   var b=e.target.closest('[data-pa]');if(!b)return;
   var id=b.dataset.id,a=b.dataset.pa,t=S.tasks.find(function(x){return x.id===id});if(!t)return;
@@ -2724,6 +2762,7 @@ $('#p-pilotage').addEventListener('click',function(e){
   else if(a==='back'){guard(store.patch(id,{st:'',by:'',resume:''}));toast('Reprise : '+t.text)}
   else if(a==='done')toggleTask(t,id);
   else if(a==='edit')plFormOpen(id);
+  else if(a==='imp'){guard(store.patch(id,{imp:IMP_NEXT[impOf(t)||'']}))}
 });
 $('#pl-sheet').addEventListener('submit',function(e){
   e.preventDefault();var sh=S.pSheet;if(!sh)return;
@@ -2750,8 +2789,8 @@ function plFormOpen(id){
   S.pForm={id:id||null};S.pSheet=null;$('#pl-sheet').hidden=true;
   $('#pl-ft').textContent=t?'Modifier l’action':'Nouvelle action';
   $('#pf-text').value=t?t.text:'';
-  $('#pf-req').value=t&&t.req||'';
-  $('#pf-own').value=t&&t.owner||'';
+  var L=plLists();plFillSel('pf-req',L.req,t&&t.req||'');plFillSel('pf-own',L.own,t&&t.owner||'');
+  $('#pf-imp').value=t?(impOf(t)||''):'';
   $('#pf-due').value=t&&t.due?t.due.slice(0,10):'';
   $('#pf-st').value=t&&t.st||'';
   $('#pf-by').value=t&&t.by||'';
@@ -2783,7 +2822,9 @@ $('#pl-form').addEventListener('submit',function(e){
   if(st&&!res){fail('Indiquez une date.',$('#pf-res'));return}
   var t=f.id?S.tasks.find(function(x){return x.id===f.id}):null;
   var due=dt?((t&&t.due&&t.due.slice(0,10)===dt)?t.due:dt):null;
-  var p={text:tx,req:$('#pf-req').value.trim(),owner:$('#pf-own').value.trim(),due:due,st:st,by:st?by:'',resume:st?res:'',notes:$('#pf-notes').value.trim(),pil:true};
+  var rq=plVal('pf-req'),ow=plVal('pf-own'),LL=plLists();
+  if((rq&&LL.req.indexOf(rq)<0)||(ow&&LL.own.indexOf(ow)<0))plSaveLists(rq&&LL.req.indexOf(rq)<0?LL.req.concat([rq]):LL.req,ow&&LL.own.indexOf(ow)<0?LL.own.concat([ow]):LL.own);
+  var p={text:tx,req:rq,owner:ow,imp:$('#pf-imp').value,due:due,st:st,by:st?by:'',resume:st?res:'',notes:$('#pf-notes').value.trim(),pil:true};
   S.pForm=null;$('#pl-form').hidden=true;
   if(t){guard(store.patch(t.id,p));toast('Action modifiée')}
   else{guard(store.add(Object.assign({done:false,star:false,imp:'',remind:null,cat:'',subs:[],repeat:'',created:Date.now()},p)));toast('Action ajoutée à Pilotage')}
