@@ -126,7 +126,11 @@ h1{font:600 22px/1.1 var(--font-display);letter-spacing:-.02em;margin:0}
 .task.imp-urgent::before,.task.imp-important::before,.task.imp-low::before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:4px;border-radius:0 4px 4px 0;background:var(--imp)}
 .task.imp-urgent{--imp:var(--danger)}.task.imp-important{--imp:var(--star)}.task.imp-low{--imp:var(--line-strong)}
 .impt{flex:none;font-size:11px;font-weight:700;letter-spacing:.02em;padding:1px 7px;border-radius:999px;margin-top:3px;border:1px solid currentColor}
-.impt.u{color:var(--danger)}.impt.i{color:var(--star)}
+.impt.u{color:#fff;background:#D6402F;border-color:#D6402F}.impt.i{color:var(--star)}
+.task.imp-urgent{background:color-mix(in srgb,var(--danger) 12%,transparent);border-radius:12px}
+.task.imp-urgent::before{width:6px}
+.task.imp-urgent .t,.task.imp-urgent .text{font-weight:600}
+.tb-i.u{background:color-mix(in srgb,var(--danger) 12%,transparent)}
 .mini[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:600}
 .mini .dot,.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--imp,var(--line-strong));display:inline-block}
 .dot.u{--imp:var(--danger)}.dot.i{--imp:var(--star)}.dot.l{--imp:var(--line-strong)}
@@ -2948,7 +2952,7 @@ $('#pl-form').addEventListener('submit',function(e){
 $('#open-pilot').addEventListener('click',function(){setView(S.tab==='pilotage'?'taches':'pilotage',true)});
 
 /* ---------- démarrage ---------- */
-var APP_VER='v33';
+var APP_VER='v34';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
