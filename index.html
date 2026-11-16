@@ -764,6 +764,11 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
 
     <section class="panel" id="p-reglages" aria-label="Réglages">
       <button type="button" class="back" data-back>‹ Retour aux tâches</button>
+      <div class="card editor" id="ver-card">
+        <h2 class="h2">Version de l’application</h2>
+        <p class="hint" id="ver-t"></p>
+        <div class="actions"><button type="button" class="mini" id="ver-up">Forcer la mise à jour</button></div>
+      </div>
       <div class="card editor" id="theme-card">
         <h2 class="h2">Apparence</h2>
         <div class="seg" id="theme-seg" role="group" aria-label="Thème"><button type="button" data-th="dark" aria-pressed="true">Sombre</button><button type="button" data-th="light" aria-pressed="false">Clair</button><button type="button" data-th="auto" aria-pressed="false">Auto</button></div>
@@ -2932,6 +2937,16 @@ $('#pl-form').addEventListener('submit',function(e){
 $('#open-pilot').addEventListener('click',function(){setView(S.tab==='pilotage'?'taches':'pilotage',true)});
 
 /* ---------- démarrage ---------- */
+var APP_VER='v31';
+$('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
+$('#ver-up').addEventListener('click',async function(){
+  this.disabled=true;this.textContent='Mise à jour…';
+  try{
+    if('serviceWorker' in navigator){var rs=await navigator.serviceWorker.getRegistrations();for(var i=0;i<rs.length;i++)await rs[i].unregister()}
+    if(window.caches){var ks=await caches.keys();for(var j=0;j<ks.length;j++)await caches.delete(ks[j])}
+  }catch(e){}
+  location.href=location.pathname+'?maj='+Date.now()+location.hash;
+});
 if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)navigator.serviceWorker.register('sw.js').catch(function(){});
 $('#prem').innerHTML=remOptions(String(ls.get('rem','0')));
 $('#prep').innerHTML=repOptions('');
