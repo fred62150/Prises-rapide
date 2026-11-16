@@ -288,6 +288,10 @@ details.setup summary{cursor:pointer;font-weight:600;font-size:14px;padding:6px 
 #open-tb{margin-right:8px}
 .tb-date{font:600 21px/1.2 var(--font-display);margin:0;text-transform:capitalize}
 .tb-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.tb-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.tb-new{display:flex;gap:6px}
+button.tb-t{font:inherit;color:inherit;cursor:pointer;width:100%}
+.tb-t[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .tb-t{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:9px 2px 7px;text-align:center}
 .tb-t b{display:block;font:600 22px/1.1 var(--font-display);font-variant-numeric:tabular-nums}
 .tb-t span{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
@@ -672,6 +676,7 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
 
     <section class="panel" id="p-tb" aria-label="Tableau de bord">
       <h2 class="tb-date" id="tb-date"></h2>
+      <div class="tb-bar"><div class="seg" id="tb-src" role="group" aria-label="Afficher"><button type="button" data-ts="" aria-pressed="true">Tout</button><button type="button" data-ts="task" aria-pressed="false">Tâches</button><button type="button" data-ts="pil" aria-pressed="false">Pilotage</button></div><div class="tb-new"><button type="button" class="mini primary" id="tb-nt">+ Tâche</button><button type="button" class="mini primary" id="tb-np">+ Pilotage</button></div></div>
       <div class="tb-tiles" id="tb-tiles"></div>
       <div id="tb-ev"></div>
       <div id="tb-list"></div>
@@ -2718,29 +2723,43 @@ function tbItem(t){
   var when=t.due?whenLabel(t):'Sans date';
   return '<div class="tb-i'+(ci==='urgent'?' u':ci==='important'?' i':'')+'" data-id="'+esc(t.id)+'"><button type="button" class="ck" data-tb="done" aria-label="Terminer"></button><div class="b" data-tb="open"><strong>'+esc(t.text)+'</strong><small'+(g==='late'?' class="late"':'')+'>'+impTag(t)+(t.pil?'<span class="tb-src">Pilotage</span>':'')+esc(when)+(m.length?' · '+m.join(' · '):'')+'</small></div></div>';
 }
+S.tbSrc=ls.get('tbsrc','');S.tbF='';
+var TBF={late:'En retard',urg:'Urgentes',today:'Aujourd’hui',rel:'À relancer',sus:'Suspendues'};
+function tbWatch(t){
+  var td=ymd(new Date()),lab=(t.st==='susp'?'Suspendue':'En attente')+(t.by?' par '+esc(t.by):'')+' · '+(t.st==='susp'?'reprise ':'relance ')+esc(whenLabel({due:t.resume||ymd(new Date())}));
+  return '<div class="tb-i" data-id="'+esc(t.id)+'"><div class="b" data-tb="open"><strong>'+esc(t.text)+'</strong><small'+(t.resume&&t.resume<=td?' class="late"':'')+'>'+(t.pil?'<span class="tb-src">Pilotage</span>':'')+lab+'</small></div><button type="button" class="mini" data-tb="back">Reprendre</button></div>';
+}
 function renderTB(){
   var box=$('#tb-tiles');if(!box)return;
-  var now=new Date(),td=ymd(now),open=S.tasks.filter(function(t){return !t.done}),act=open.filter(function(t){return !t.st});
+  var now=new Date(),td=ymd(now),src=S.tbSrc,F=S.tbF;
+  var open=S.tasks.filter(function(t){return !t.done&&(!src||(src==='pil')===!!t.pil)}),act=open.filter(function(t){return !t.st});
   var late=act.filter(function(t){return groupOf(t)==='late'}),today=act.filter(function(t){return groupOf(t)==='today'}),
       urg=act.filter(function(t){return impOf(t)==='urgent'}),rel=open.filter(function(t){return t.st&&t.resume&&t.resume<=td}),sus=open.filter(function(t){return t.st==='susp'});
+  document.querySelectorAll('#tb-src [data-ts]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.ts===src))});
   $('#tb-date').textContent=now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
-  var tile=function(n,l,c){return '<div class="tb-t '+c+(n?'':' zero')+'"><b>'+n+'</b><span>'+l+'</span></div>'};
-  box.innerHTML=tile(late.length,'En retard','late')+tile(urg.length,'Urgentes','urg')+tile(today.length,'Aujourd’hui','')+tile(rel.length,'À relancer','rel')+tile(sus.length,'Suspendues','sus');
-  /* réunions du jour */
+  var tile=function(n,k,c){return '<button type="button" class="tb-t '+c+(n?'':' zero')+'" data-tf="'+k+'" aria-pressed="'+(F===k)+'"><b>'+n+'</b><span>'+TBF[k]+'</span></button>'};
+  box.innerHTML=tile(late.length,'late','late')+tile(urg.length,'urg','urg')+tile(today.length,'today','')+tile(rel.length,'rel','rel')+tile(sus.length,'sus','sus');
   var hid=calHide(),ds=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime(),de=ds+86400000,hasCal=!!calDoc();
   var evs=calAll().filter(function(e){return hid.indexOf(e.c)<0&&!e.all&&e.s.getTime()<de&&e.e.getTime()>=ds});
-  $('#tb-ev').innerHTML=hasCal?'<div class="tb-sec">Réunions du jour<em>'+evs.length+'</em></div>'+(evs.length?'<div class="card" style="padding:4px 12px;margin-bottom:14px">'+evs.map(function(e){return evRow(e,now.getTime())}).join('')+'</div>':'<p class="tb-more">Aucune réunion aujourd’hui.</p>'):'';
-  /* à traiter */
-  var todo=act.filter(function(t){var g=groupOf(t),i=impOf(t);return g==='late'||g==='today'||i==='urgent'||i==='important'}).sort(cmp),shown=todo.slice(0,12);
-  $('#tb-list').innerHTML='<div class="tb-sec">À traiter<em>'+todo.length+'</em></div>'+(shown.length?shown.map(tbItem).join('')+(todo.length>shown.length?'<p class="tb-more">+ '+(todo.length-shown.length)+' autre'+(todo.length-shown.length>1?'s':'')+' dans les tâches.</p>':''):'<div class="card empty"><strong>Rien d’urgent</strong>Aucune tâche en retard, du jour ou importante.</div>');
-  /* à surveiller */
-  var lim=ymd(addDays(2)),w=open.filter(function(t){return t.st&&t.resume&&t.resume<=lim}).sort(function(a,b){return a.resume<b.resume?-1:1}).slice(0,6);
-  $('#tb-watch').innerHTML=w.length?'<div class="tb-sec" style="margin-top:6px">À surveiller<em>'+w.length+'</em></div>'+w.map(function(t){
-    var lab=(t.st==='susp'?'Suspendue':'En attente')+(t.by?' par '+esc(t.by):'')+' · '+(t.st==='susp'?'reprise ':'relance ')+esc(whenLabel({due:t.resume}));
-    return '<div class="tb-i" data-id="'+esc(t.id)+'"><div class="b" data-tb="open"><strong>'+esc(t.text)+'</strong><small'+(t.resume<=td?' class="late"':'')+'>'+(t.pil?'<span class="tb-src">Pilotage</span>':'')+lab+'</small></div><button type="button" class="mini" data-tb="back">Reprendre</button></div>';
-  }).join(''):'';
+  $('#tb-ev').innerHTML=(hasCal&&!F)?'<div class="tb-sec">Réunions du jour<em>'+evs.length+'</em></div>'+(evs.length?'<div class="card" style="padding:4px 12px;margin-bottom:14px">'+evs.map(function(e){return evRow(e,now.getTime())}).join('')+'</div>':'<p class="tb-more">Aucune réunion aujourd’hui.</p>'):'';
+  var lst=$('#tb-list'),wch=$('#tb-watch');
+  if(F==='rel'||F==='sus'){
+    var arr=(F==='rel'?rel:sus).slice().sort(function(a,b){return (a.resume||'9')<(b.resume||'9')?-1:1});
+    lst.innerHTML='<div class="tb-sec">'+TBF[F]+'<em>'+arr.length+' · touche la tuile pour revenir</em></div>'+(arr.length?arr.map(tbWatch).join(''):'<div class="card empty"><strong>Aucune</strong>Rien dans cette catégorie.</div>');wch.innerHTML='';return;
+  }
+  var todo;
+  if(F==='late')todo=late;else if(F==='urg')todo=urg;else if(F==='today')todo=today;
+  else todo=act.filter(function(t){var g=groupOf(t),i=impOf(t);return g==='late'||g==='today'||i==='urgent'||i==='important'});
+  todo=todo.slice().sort(cmp);var shown=F?todo:todo.slice(0,12);
+  lst.innerHTML='<div class="tb-sec">'+(F?TBF[F]:'À traiter')+'<em>'+todo.length+(F?' · touche la tuile pour revenir':'')+'</em></div>'+(shown.length?shown.map(tbItem).join('')+(todo.length>shown.length?'<p class="tb-more">+ '+(todo.length-shown.length)+' autre'+(todo.length-shown.length>1?'s':'')+' dans les tâches.</p>':''):'<div class="card empty"><strong>Rien ici</strong>'+(F?'Aucun élément dans cette catégorie.':'Aucune tâche en retard, du jour ou importante.')+'</div>');
+  var lim=ymd(addDays(2)),w=F?[]:open.filter(function(t){return t.st&&t.resume&&t.resume<=lim}).sort(function(a,b){return a.resume<b.resume?-1:1}).slice(0,6);
+  wch.innerHTML=w.length?'<div class="tb-sec" style="margin-top:6px">À surveiller<em>'+w.length+'</em></div>'+w.map(tbWatch).join(''):'';
 }
 $('#p-tb').addEventListener('click',function(e){
+  var tf=e.target.closest('[data-tf]');if(tf){S.tbF=S.tbF===tf.dataset.tf?'':tf.dataset.tf;renderTB();return}
+  var ts=e.target.closest('[data-ts]');if(ts){S.tbSrc=ts.dataset.ts;ls.set('tbsrc',S.tbSrc);renderTB();return}
+  if(e.target.closest('#tb-nt')){setView('taches',true);setTimeout(function(){var q=$('#quick');if(q)q.focus()},60);return}
+  if(e.target.closest('#tb-np')){setView('pilotage',true);plFormOpen(null);return}
   var b=e.target.closest('[data-tb]');if(!b)return;
   var it=b.closest('[data-id]'),id=it&&it.dataset.id,t=id&&S.tasks.find(function(x){return x.id===id});if(!t)return;
   var a=b.dataset.tb;
