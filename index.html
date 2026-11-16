@@ -2702,7 +2702,7 @@ function renderViewbar(){
 }
 $('#viewseg').addEventListener('click',function(e){var b=e.target.closest('[data-vw]');if(b){var v=b.dataset.vw;S.dayView=v==='day';S.weekView=v==='week';ls.set('dayview',S.dayView);ls.set('weekview',S.weekView);renderViewbar();renderTasks()}});
 $('#catseg').addEventListener('click',function(e){var b=e.target.closest('[data-cf]');if(b){S.catF=b.dataset.cf;ls.set('catf',S.catF);renderViewbar();renderTasks()}});
-function viewFromHash(){var h=location.hash.slice(1);return VIEWS.indexOf(h)>=0?h:'taches'}
+function viewFromHash(){var h=location.hash.slice(1);return VIEWS.indexOf(h)>=0?h:'tb'}
 function setView(v,push){
   S.tab=v;$('#panels').dataset.view=v;
   VIEWS.forEach(function(k){var t=$('#tab-'+k);if(t)t.setAttribute('aria-current',k===v?'page':'false')});
