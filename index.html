@@ -1807,8 +1807,18 @@ async function callAI(prov,model,prompt){
     if(!r.ok){var t='';try{t=(await r.text()).slice(0,200)}catch(e){}throw {status:r.status,text:t}}
     j=await r.json();
   }
-  if(prov.type==='anthropic')return (j.content&&j.content[0]&&j.content[0].text)||'';
-  return (j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
+  if(prov.type==='anthropic')return chunkTxt(j.content);
+  return chunkTxt(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content);
+}
+function chunkTxt(c){
+  if(c==null)return '';
+  if(typeof c==='string')return c;
+  if(Array.isArray(c))return c.map(function(x){
+    if(typeof x==='string')return x;
+    if(!x||x.type==='thinking'||x.type==='reasoning'||x.type==='redacted_thinking')return '';
+    return typeof x.text==='string'?x.text:'';
+  }).join('');
+  return typeof c.text==='string'?c.text:'';
 }
 function flatAI(v,k){
   if(v==null)return '';
@@ -2937,7 +2947,7 @@ $('#pl-form').addEventListener('submit',function(e){
 $('#open-pilot').addEventListener('click',function(){setView(S.tab==='pilotage'?'taches':'pilotage',true)});
 
 /* ---------- démarrage ---------- */
-var APP_VER='v31';
+var APP_VER='v32';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
