@@ -265,7 +265,7 @@ details.setup summary{cursor:pointer;font-weight:600;font-size:14px;padding:6px 
 .panels:not([data-view="trajets"]) #p-trajets{display:none}
 .panels[data-view="trajets"] #p-taches,.panels[data-view="trajets"] #p-relecture,.panels[data-view="trajets"] #p-reglages{display:none}
 @media (min-width:900px){.panels[data-view="trajets"]{grid-template-columns:minmax(0,720px)}}
-.tabbar{grid-template-columns:repeat(4,1fr)}
+.tabbar{grid-template-columns:repeat(5,1fr)}
 @media (max-width:520px){.tabbar .tab{flex-direction:column;gap:2px;font-size:11.5px;min-height:52px}}
 #tripform .when{margin-top:0}
 .trow2{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;padding:10px 12px;border-bottom:1px solid var(--line);align-items:center}
@@ -280,6 +280,30 @@ details.setup summary{cursor:pointer;font-weight:600;font-size:14px;padding:6px 
 @media (max-width:899px){#open-trips{display:none}}
 #open-trips,#open-carnet{margin-right:8px}
 
+/* tableau de bord */
+.panels:not([data-view="tb"]) #p-tb{display:none}
+.panels[data-view="tb"] .panel:not(#p-tb){display:none}
+@media (min-width:900px){.panels[data-view="tb"]{grid-template-columns:minmax(0,820px)}}
+@media (max-width:899px){#open-tb{display:none}}
+#open-tb{margin-right:8px}
+.tb-date{font:600 21px/1.2 var(--font-display);margin:0;text-transform:capitalize}
+.tb-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.tb-t{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:9px 2px 7px;text-align:center}
+.tb-t b{display:block;font:600 22px/1.1 var(--font-display);font-variant-numeric:tabular-nums}
+.tb-t span{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+.tb-t.late b,.tb-t.urg b{color:var(--danger)}.tb-t.rel b{color:var(--star)}.tb-t.sus b{color:var(--accent)}.tb-t.zero b{color:var(--muted);font-weight:500}
+.tb-sec{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:2px 0 8px}
+.tb-sec em{font-style:normal;text-transform:none;letter-spacing:0;font-weight:500}
+.tb-i{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;margin-bottom:6px;border:1px solid var(--line);border-left:4px solid var(--line-strong);border-radius:10px;background:var(--surface)}
+.tb-i.u{border-left-color:var(--danger)}.tb-i.i{border-left-color:var(--star)}
+.tb-i .ck{flex:none;width:24px;height:24px;margin-top:1px;border-radius:50%;border:2px solid var(--line-strong);background:none;cursor:pointer;padding:0}
+.tb-i .b{flex:1;min-width:0;cursor:pointer}
+.tb-i strong{font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.tb-i small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px}
+.tb-i small.late{color:var(--danger)}
+.tb-i .impt{margin:0 6px 0 0;display:inline-block}
+.tb-src{display:inline-block;font-size:10.5px;border:1px solid var(--line-strong);border-radius:999px;padding:0 7px;color:var(--muted);margin-right:6px}
+.tb-more{font-size:12.5px;color:var(--muted);margin:0 0 12px}
 /* pilotage */
 .panels:not([data-view="pilotage"]) #p-pilotage{display:none}
 .panels[data-view="pilotage"] .panel:not(#p-pilotage){display:none}
@@ -449,6 +473,7 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
     </div>
     <div class="hr">
       <button type="button" class="pill" id="sync" data-s="off"><i></i><span id="sync-t">Sur l’appareil</span></button>
+      <button type="button" class="gear" id="open-tb" aria-label="Tableau de bord" title="Tableau de bord"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></button>
       <button type="button" class="gear" id="open-pilot" aria-label="Pilotage" title="Pilotage"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/></svg></button>
       <button type="button" class="gear" id="open-trips" aria-label="Trajets" title="Trajets"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/></svg></button>
       <button type="button" class="gear" id="open-carnet" aria-label="Carnet (mémos)" title="Carnet (mémos)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h11a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6z"/><path d="M6 3v18M10 8h5M10 12h5"/></svg></button>
@@ -645,6 +670,13 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
       <details class="card hist"><summary id="tr-rsum">Distances mémorisées</summary><div class="editor" id="tr-routes"></div></details>
     </section>
 
+    <section class="panel" id="p-tb" aria-label="Tableau de bord">
+      <h2 class="tb-date" id="tb-date"></h2>
+      <div class="tb-tiles" id="tb-tiles"></div>
+      <div id="tb-ev"></div>
+      <div id="tb-list"></div>
+      <div id="tb-watch"></div>
+    </section>
     <section class="panel" id="p-pilotage" aria-label="Pilotage">
       <button type="button" class="back" data-back>‹ Retour aux tâches</button>
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button type="button" class="mini primary" id="pl-new">+ Nouvelle action</button></div>
@@ -860,6 +892,7 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
 </div>
 
 <nav class="tabbar" aria-label="Sections">
+  <button class="tab" id="tab-tb"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Aujourd’hui</button>
   <button class="tab" id="tab-taches" aria-current="page"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Tâches <span class="badge" id="badge" hidden>0</span></button>
   <button class="tab" id="tab-relecture"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg>Messages</button>
   <button class="tab" id="tab-trajets"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/></svg>Trajets</button>
@@ -1205,7 +1238,7 @@ function cmp(a,b){
   return (b.created||0)-(a.created||0);
 }
 function renderTasks(){
-  renderAgenda();renderPilot();
+  renderAgenda();renderPilot();renderTB();
   var box=$('#list');
   var act=document.activeElement&&document.activeElement.id,keep=null;
   if($('#edit-field'))keep={t:$('#edit-field').value,d:$('#e-date').value,h:$('#e-time').value,r:$('#e-rem').value,c:$('#e-cat').value,p:$('#e-rep').value,n:$('#e-notes').value};
@@ -2152,7 +2185,7 @@ $('#copy-ex').addEventListener('click',function(){
 });
 
 /* ---------- onglets ---------- */
-var VIEWS=['taches','relecture','trajets','carnet','reglages','pilotage'];
+var VIEWS=['taches','relecture','trajets','carnet','reglages','pilotage','tb'];
 
 /* ---------- étape 3 : extraire des tâches / aider à répondre ---------- */
 var X={busy:false,error:'',items:null,note:'',mode:ls.get('mode','review')};
@@ -2677,6 +2710,45 @@ $('#open-trips').addEventListener('click',function(){setView(S.tab==='trajets'?'
 $('#open-settings').addEventListener('click',function(){setView(S.tab==='reglages'?'taches':'reglages',true)});
 $('#sync').addEventListener('click',function(){setView('reglages',true)});
 window.addEventListener('hashchange',function(){setView(viewFromHash(),false)});
+
+/* ---------- tableau de bord ---------- */
+function tbItem(t){
+  var g=groupOf(t),ci=impOf(t),m=[];
+  if(t.req)m.push(esc(t.req));if(t.owner)m.push('→ '+esc(t.owner));
+  var when=t.due?whenLabel(t):'Sans date';
+  return '<div class="tb-i'+(ci==='urgent'?' u':ci==='important'?' i':'')+'" data-id="'+esc(t.id)+'"><button type="button" class="ck" data-tb="done" aria-label="Terminer"></button><div class="b" data-tb="open"><strong>'+esc(t.text)+'</strong><small'+(g==='late'?' class="late"':'')+'>'+impTag(t)+(t.pil?'<span class="tb-src">Pilotage</span>':'')+esc(when)+(m.length?' · '+m.join(' · '):'')+'</small></div></div>';
+}
+function renderTB(){
+  var box=$('#tb-tiles');if(!box)return;
+  var now=new Date(),td=ymd(now),open=S.tasks.filter(function(t){return !t.done}),act=open.filter(function(t){return !t.st});
+  var late=act.filter(function(t){return groupOf(t)==='late'}),today=act.filter(function(t){return groupOf(t)==='today'}),
+      urg=act.filter(function(t){return impOf(t)==='urgent'}),rel=open.filter(function(t){return t.st&&t.resume&&t.resume<=td}),sus=open.filter(function(t){return t.st==='susp'});
+  $('#tb-date').textContent=now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  var tile=function(n,l,c){return '<div class="tb-t '+c+(n?'':' zero')+'"><b>'+n+'</b><span>'+l+'</span></div>'};
+  box.innerHTML=tile(late.length,'En retard','late')+tile(urg.length,'Urgentes','urg')+tile(today.length,'Aujourd’hui','')+tile(rel.length,'À relancer','rel')+tile(sus.length,'Suspendues','sus');
+  /* réunions du jour */
+  var hid=calHide(),ds=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime(),de=ds+86400000,hasCal=!!calDoc();
+  var evs=calAll().filter(function(e){return hid.indexOf(e.c)<0&&!e.all&&e.s.getTime()<de&&e.e.getTime()>=ds});
+  $('#tb-ev').innerHTML=hasCal?'<div class="tb-sec">Réunions du jour<em>'+evs.length+'</em></div>'+(evs.length?'<div class="card" style="padding:4px 12px;margin-bottom:14px">'+evs.map(function(e){return evRow(e,now.getTime())}).join('')+'</div>':'<p class="tb-more">Aucune réunion aujourd’hui.</p>'):'';
+  /* à traiter */
+  var todo=act.filter(function(t){var g=groupOf(t),i=impOf(t);return g==='late'||g==='today'||i==='urgent'||i==='important'}).sort(cmp),shown=todo.slice(0,12);
+  $('#tb-list').innerHTML='<div class="tb-sec">À traiter<em>'+todo.length+'</em></div>'+(shown.length?shown.map(tbItem).join('')+(todo.length>shown.length?'<p class="tb-more">+ '+(todo.length-shown.length)+' autre'+(todo.length-shown.length>1?'s':'')+' dans les tâches.</p>':''):'<div class="card empty"><strong>Rien d’urgent</strong>Aucune tâche en retard, du jour ou importante.</div>');
+  /* à surveiller */
+  var lim=ymd(addDays(2)),w=open.filter(function(t){return t.st&&t.resume&&t.resume<=lim}).sort(function(a,b){return a.resume<b.resume?-1:1}).slice(0,6);
+  $('#tb-watch').innerHTML=w.length?'<div class="tb-sec" style="margin-top:6px">À surveiller<em>'+w.length+'</em></div>'+w.map(function(t){
+    var lab=(t.st==='susp'?'Suspendue':'En attente')+(t.by?' par '+esc(t.by):'')+' · '+(t.st==='susp'?'reprise ':'relance ')+esc(whenLabel({due:t.resume}));
+    return '<div class="tb-i" data-id="'+esc(t.id)+'"><div class="b" data-tb="open"><strong>'+esc(t.text)+'</strong><small'+(t.resume<=td?' class="late"':'')+'>'+(t.pil?'<span class="tb-src">Pilotage</span>':'')+lab+'</small></div><button type="button" class="mini" data-tb="back">Reprendre</button></div>';
+  }).join(''):'';
+}
+$('#p-tb').addEventListener('click',function(e){
+  var b=e.target.closest('[data-tb]');if(!b)return;
+  var it=b.closest('[data-id]'),id=it&&it.dataset.id,t=id&&S.tasks.find(function(x){return x.id===id});if(!t)return;
+  var a=b.dataset.tb;
+  if(a==='done')toggleTask(t,id);
+  else if(a==='back'){guard(store.patch(id,{st:'',by:'',resume:''}));toast('Reprise : '+t.text)}
+  else if(a==='open')setView(t.pil?'pilotage':'taches',true);
+});
+$('#open-tb').addEventListener('click',function(){setView(S.tab==='tb'?'taches':'tb',true)});
 
 /* ---------- pilotage ---------- */
 S.pReq='';S.pImp='';S.pSheet=null;
