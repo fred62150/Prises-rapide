@@ -515,6 +515,7 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
 .pl-note>span,.pl-note>summary>span{color:var(--fg);overflow-wrap:anywhere}
 .pl-nt{margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--fg)}
 details.pl-note[open]>summary>span{display:none}
+.pl-c[draggable=true]{cursor:grab}.pl-c.dragging{opacity:.4}.pl-col.pl-over{outline:2px dashed var(--accent);outline-offset:-3px}
 </style>
 </head>
 <body>
@@ -2938,7 +2939,7 @@ function plCard(t){
   var ci=impOf(t),tag=impTag(t);
   if(!t.st&&plSteps().length>1)b+='<button type="button" class="mini" data-pa="step" data-id="'+esc(t.id)+'">Étape : '+esc(stepOf(t))+'</button>';
   b+='<button type="button" class="mini" data-pa="imp" data-id="'+esc(t.id)+'">Importance : '+esc(ci?IMP_LBL[ci]:'Normale')+'</button>';
-  return '<div class="pl-c'+(late?' late':'')+(t.st==='susp'?' susp':'')+(soon?' soon':'')+(ci==='urgent'?' imp-urgent':'')+'"><div class="pl-h"><strong>'+esc(t.text)+'</strong>'+(right?'<em class="'+(late?'late':'')+'">'+esc(right)+'</em>':'')+'</div>'+
+  return '<div class="pl-c'+(late?' late':'')+(t.st==='susp'?' susp':'')+(soon?' soon':'')+(ci==='urgent'?' imp-urgent':'')+'" data-card="'+esc(t.id)+'"><div class="pl-h"><strong>'+esc(t.text)+'</strong>'+(right?'<em class="'+(late?'late':'')+'">'+esc(right)+'</em>':'')+'</div>'+
     '<div class="pl-m">'+tag+(meta.length?meta.join(' · '):'Aucun demandeur renseigné')+'</div>'+plNoteHtml(t.notes)+'<div class="actions" style="margin:0">'+b+'</div></div>';
 }
 S.pView=ls.get('plview','list')==='board'?'board':'list';
@@ -2967,8 +2968,9 @@ function renderPilot(){
   $('#panels').dataset.plv=S.pView;
   document.querySelectorAll('#pl-seg [data-pv]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.pv===S.pView))});
   if(S.pView==='board'){
-    var col=function(title,items){return '<section class="pl-col" aria-label="'+title+'"><h3 class="pl-ch">'+title+'<em>'+items.length+'</em></h3>'+(items.length?items.map(plCard).join(''):'<p class="pl-ce">Aucune action</p>')+'</section>'};
-    $('#pl-list').innerHTML=open.length?'<div class="pl-board">'+STEPS.map(function(n){return col(n,byStep(n))}).join('')+col('En attente',wF)+col('Suspendues',sF)+'</div>':empty;
+    var col=function(title,items,key){return '<section class="pl-col" data-col="'+esc(key)+'" aria-label="'+title+'"><h3 class="pl-ch">'+title+'<em>'+items.length+'</em></h3>'+(items.length?items.map(plCard).join(''):'<p class="pl-ce">Aucune action</p>')+'</section>'};
+    $('#pl-list').innerHTML=open.length?'<div class="pl-board">'+STEPS.map(function(n){return col(n,byStep(n),'step:'+n)}).join('')+col('En attente',wF,'wait')+col('Suspendues',sF,'susp')+'</div>':empty;
+    if(window.matchMedia&&matchMedia('(hover:hover) and (pointer:fine)').matches)document.querySelectorAll('#pl-list .pl-c[data-card]').forEach(function(c){c.setAttribute('draggable','true')});
     return;
   }
   var sec=function(title,items){return items.length?'<div class="pl-sec">'+title+' ('+items.length+')</div>'+items.map(plCard).join(''):''};
@@ -3140,8 +3142,27 @@ $('#p-projets').addEventListener('click',function(e){
 
 $('#tab-projets').addEventListener('click',function(){S.pjOpen='';S.pjDel=false;renderProjets()});
 
+
+/* ---------- glisser-déposer (Mac, souris) ---------- */
+(function(){
+  var L=$('#pl-list'),drag=null;
+  L.addEventListener('dragstart',function(e){var c=e.target.closest&&e.target.closest('[data-card]');if(!c)return;drag=c.dataset.card;e.dataTransfer.setData('text/plain',drag);e.dataTransfer.effectAllowed='move';c.classList.add('dragging')});
+  L.addEventListener('dragend',function(){drag=null;L.querySelectorAll('.dragging,.pl-over').forEach(function(x){x.classList.remove('dragging','pl-over')})});
+  L.addEventListener('dragover',function(e){var c=e.target.closest('[data-col]');if(!c||!drag)return;e.preventDefault();L.querySelectorAll('.pl-over').forEach(function(x){if(x!==c)x.classList.remove('pl-over')});c.classList.add('pl-over')});
+  L.addEventListener('drop',function(e){
+    var c=e.target.closest('[data-col]');if(!c||!drag)return;e.preventDefault();
+    var id=drag,key=c.dataset.col,t=S.tasks.find(function(x){return x.id===id});drag=null;
+    L.querySelectorAll('.dragging,.pl-over').forEach(function(x){x.classList.remove('dragging','pl-over')});
+    if(!t)return;
+    if(key==='wait'||key==='susp'){if(t.st!==key)plSheetOpen(id,key);return}
+    var name=key.slice(5),step=name==='En cours'?'':name;
+    if(t.st){guard(store.patch(id,{st:'',by:'',resume:'',step:step}));toast('Reprise : '+t.text)}
+    else if(stepOf(t)!==name){guard(store.patch(id,{step:step}));toast('Étape : '+name)}
+  });
+})();
+
 /* ---------- démarrage ---------- */
-var APP_VER='v43';
+var APP_VER='v44';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
