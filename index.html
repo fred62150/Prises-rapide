@@ -93,8 +93,8 @@ h1{font:600 22px/1.1 var(--font-display);letter-spacing:-.02em;margin:0}
 /* saisie rapide */
 .composer{padding:12px}
 .composer .row{display:flex;gap:8px}
-#quick{flex:1;min-width:0;font-size:16px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
-#quick::placeholder,#oneoff::placeholder,#draft::placeholder{color:var(--muted)}
+#quick,#pj-name{flex:1;min-width:0;font-size:16px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+#quick::placeholder,#pj-name::placeholder,#oneoff::placeholder,#draft::placeholder{color:var(--muted)}
 .btn-add{width:48px;height:48px;border-radius:12px;border:0;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;flex:none}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:6px 12px;font-size:13px;min-height:36px}
@@ -380,7 +380,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px));background:var(--surface);color:var(--fg);border:1px solid var(--glass-edge);
   -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);box-shadow:var(--shadow)}
 .sheet-bg{background:rgba(10,15,30,.32);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-input,textarea,select,#quick,#draft,.edit{background:var(--surface-2)!important;border-color:var(--line)!important}
+input,textarea,select,#quick,#pj-name,#draft,.edit{background:var(--surface-2)!important;border-color:var(--line)!important}
 input:focus,textarea:focus,select:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--accent-soft)}
 .btn,.mini{background:var(--surface-2);border-color:var(--glass-edge);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .btn.primary,.mini.primary{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 88%,#fff),var(--accent));border-color:transparent;
@@ -3216,7 +3216,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v48';
+var APP_VER='v49';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
