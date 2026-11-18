@@ -508,6 +508,7 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
 .pj-card small{display:block;color:var(--muted);margin-top:2px;font-size:13.5px}
 #pj-form{margin-bottom:12px}
 .pl-n{font-size:13.5px;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;margin:2px 0 8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pj-done{margin-top:14px}.pj-done summary{cursor:pointer;color:var(--muted);font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;padding:8px 2px}
 </style>
 </head>
 <body>
@@ -750,6 +751,7 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
       <div class="seg" id="pl-seg" role="group" aria-label="Affichage de Pilotage" style="margin-bottom:12px"><button type="button" data-pv="list" aria-pressed="true">Liste</button><button type="button" data-pv="board" aria-pressed="false">Tableau</button></div>
       <div class="pl-tiles" id="pl-tiles"></div>
       <div class="chips" id="pl-chips" role="group" aria-label="Demandeur" style="margin:0 0 8px"></div>
+      <div class="chips" id="pl-prj" role="group" aria-label="Projet" style="margin:0 0 8px"></div>
       <div class="chips" id="pl-imps" role="group" aria-label="Importance" style="margin:0 0 12px"></div>
       <form class="card" id="pl-sheet" hidden autocomplete="off" style="padding:12px;margin-bottom:12px">
         <strong id="pl-st" style="display:block;margin-bottom:8px;overflow-wrap:anywhere">Suspendre</strong>
@@ -2852,7 +2854,7 @@ $('#p-tb').addEventListener('click',function(e){
 $('#open-tb').addEventListener('click',function(){setView(S.tab==='tb'?'taches':'tb',true)});
 
 /* ---------- pilotage ---------- */
-S.pReq='';S.pImp='';S.pSheet=null;
+S.pReq='';S.pImp='';S.pPrj='';S.pSheet=null;
 function plLists(){var d=S.styles.find(function(x){return x.plist});return {id:d&&d.id,req:(d&&Array.isArray(d.req)?d.req:[]),own:(d&&Array.isArray(d.own)?d.own:[]),steps:(d&&Array.isArray(d.steps)?d.steps:[]),projects:(d&&Array.isArray(d.projects)?d.projects:[])}}
 function plProjects(){var a=plLists().projects.slice();S.tasks.forEach(function(t){if(t.proj&&a.indexOf(t.proj)<0)a.push(t.proj)});return a}
 function plSaveProjects(a){a=plClean(a).slice(0,50);var d=S.styles.find(function(x){return x.plist});if(d)guard(store.patch(d.id,{projects:a}));else guard(store.addStyle({plist:true,created:0,req:[],own:[],projects:a}))}
@@ -2929,8 +2931,11 @@ function renderPilot(){
   $('#pl-reqs').innerHTML=reqs.map(function(r){return '<option value="'+esc(r)+'"></option>'}).join('');
   $('#pl-chips').innerHTML=['']. concat(reqs).map(function(r){return '<button type="button" class="chip" data-pr="'+esc(r)+'" aria-pressed="'+(S.pReq===r)+'">'+(r?esc(r):'Tous')+'</button>'}).join('');
   $('#pl-imps').innerHTML=[['','Toutes importances'],['urgent','Urgent'],['important','Important']].map(function(o){return '<button type="button" class="chip" data-pi="'+o[0]+'" aria-pressed="'+(S.pImp===o[0])+'">'+o[1]+'</button>'}).join('');
+  var pj=[];open.forEach(function(t){if(t.proj&&pj.indexOf(t.proj)<0)pj.push(t.proj)});pj.sort(function(a,b){return a.localeCompare(b,'fr')});
+  if(S.pPrj&&pj.indexOf(S.pPrj)<0)S.pPrj='';
+  $('#pl-prj').innerHTML=pj.length?[''].concat(pj).map(function(r){return '<button type="button" class="chip" data-pp="'+esc(r)+'" aria-pressed="'+(S.pPrj===r)+'">'+(r?'Projet : '+esc(r):'Tous les projets')+'</button>'}).join(''):'';
   renderPls();
-  var f=function(t){return (!S.pReq||t.req===S.pReq)&&(!S.pImp||impOf(t)===S.pImp)};
+  var f=function(t){return (!S.pReq||t.req===S.pReq)&&(!S.pImp||impOf(t)===S.pImp)&&(!S.pPrj||t.proj===S.pPrj)};
   var cmpR=function(a,b){return (a.resume||'9')<(b.resume||'9')?-1:1};
   var rF=run.filter(f).sort(cmp),sF=susp.filter(f).sort(cmpR),wF=wait.filter(f).sort(cmpR);
   var STEPS=plSteps(),byStep=function(n){return rF.filter(function(t){return stepOf(t)===n})};
@@ -2948,6 +2953,7 @@ function renderPilot(){
 }
 $('#p-pilotage').addEventListener('click',function(e){
   var pv=e.target.closest('#pl-seg [data-pv]');if(pv){S.pView=pv.dataset.pv==='board'?'board':'list';ls.set('plview',S.pView);renderPilot();return}
+  var pp=e.target.closest('[data-pp]');if(pp){S.pPrj=pp.dataset.pp;renderPilot();return}
   var c=e.target.closest('[data-pr]');if(c){S.pReq=c.dataset.pr;renderPilot();return}
   var ci=e.target.closest('[data-pi]');if(ci){S.pImp=ci.dataset.pi;renderPilot();return}
   if(e.target.closest('#pl-cancel')){S.pSheet=null;$('#pl-sheet').hidden=true;return}
@@ -3048,9 +3054,12 @@ function renderProjets(){
   }
   var n=S.pjOpen,m=open.filter(function(t){return t.proj===n}).sort(cmp),pil=m.filter(function(t){return t.pil}),tk=m.filter(function(t){return !t.pil});
   top.innerHTML='<button type="button" class="back" data-pjback>‹ Projets</button><h2 class="h2" style="margin:4px 0 10px;overflow-wrap:anywhere">'+esc(n)+'</h2><div class="actions" style="padding:0;margin-bottom:12px"><button type="button" class="mini primary" data-pja="newpil">+ Action de pilotage</button><button type="button" class="mini" data-pja="ren">Renommer</button><button type="button" class="mini" data-pja="del">'+(S.pjDel?'Confirmer : retirer le projet':'Supprimer le projet')+'</button></div>'+(S.pjDel?'<p class="note" style="margin:0 0 10px">Les tâches et actions restent, elles n’ont simplement plus de projet.</p>':'');
+  var dn=S.tasks.filter(function(t){return t.done&&t.proj===n}).reverse().slice(0,10);
+  var drow=function(t){return '<div class="tb-i" data-id="'+esc(t.id)+'"><button type="button" class="ck" data-tb="done" aria-label="Rouvrir : '+esc(t.text)+'"></button><div class="b"><strong style="text-decoration:line-through;opacity:.7">'+esc(t.text)+'</strong></div></div>'};
   var row=function(t){return (t.st?tbWatch(t):tbItem(t))+(t.notes?'<div class="pl-n" style="margin:-4px 4px 10px 44px">'+esc(t.notes)+'</div>':'')};
   var sec=function(title,a){return a.length?'<div class="tb-sec">'+title+'<em>'+a.length+'</em></div>'+a.map(row).join(''):''};
-  body.innerHTML=(sec('Pilotage',pil)+sec('Tâches',tk))||'<div class="card empty"><strong>Rien dans ce projet</strong>Choisis ce projet dans la fiche d’une tâche ou d’une action de Pilotage.</div>';
+  var dh=dn.length?'<details class="pj-done"><summary>Terminées ('+dn.length+')</summary>'+dn.map(drow).join('')+'</details>':'';
+  body.innerHTML=((sec('Pilotage',pil)+sec('Tâches',tk))||(dn.length?'':'<div class="card empty"><strong>Rien dans ce projet</strong>Choisis ce projet dans la fiche d’une tâche ou d’une action de Pilotage.</div>'))+dh;
 }
 $('#pj-form').addEventListener('submit',function(e){
   e.preventDefault();var v=plClean([$('#pj-name').value])[0];if(!v)return;
@@ -3089,7 +3098,7 @@ $('#p-projets').addEventListener('click',function(e){
 $('#tab-projets').addEventListener('click',function(){S.pjOpen='';S.pjDel=false;renderProjets()});
 
 /* ---------- démarrage ---------- */
-var APP_VER='v40';
+var APP_VER='v41';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
