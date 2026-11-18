@@ -516,6 +516,15 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
 .pl-nt{margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--fg)}
 details.pl-note[open]>summary>span{display:none}
 .pl-c[draggable=true]{cursor:grab}.pl-c.dragging{opacity:.4}.pl-col.pl-over{outline:2px dashed var(--accent);outline-offset:-3px}
+.pl-chk{margin:2px 0 8px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:13.5px}
+.pl-chk>summary{cursor:pointer;display:flex;align-items:center;gap:6px;min-height:32px;list-style:none;color:var(--muted);font-weight:600}.pl-chk>summary::-webkit-details-marker{display:none}
+.pl-chk summary b{color:var(--accent);font-variant-numeric:tabular-nums}
+.pl-bar{display:inline-block;flex:1;max-width:90px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}.pl-bar i{display:block;height:100%;background:var(--accent)}
+.pl-chk ul{list-style:none;margin:4px 0;padding:0}.pl-ci{display:flex;align-items:center;gap:8px;min-height:40px}
+.pl-ci.done .pl-ct{text-decoration:line-through;opacity:.65}.pl-ct{flex:1;overflow-wrap:anywhere;color:var(--fg)}
+.pl-ck{flex:none;width:28px;height:28px;border-radius:8px;border:2px solid var(--muted);background:transparent;padding:0;cursor:pointer}.pl-ck[aria-pressed=true]{background:var(--accent);border-color:var(--accent)}
+.pl-cx{flex:none;width:40px;height:40px;border:0;background:none;color:var(--muted);font-size:20px;cursor:pointer}
+.pl-addsub{display:flex;gap:6px;margin-top:4px}.pl-addsub input{flex:1;min-width:0}
 </style>
 </head>
 <body>
@@ -2917,6 +2926,13 @@ function plSheetOpen(id,mode){
   $('#pl-err').hidden=true;$('#pl-sheet').hidden=false;
   try{$('#pl-sheet').scrollIntoView({block:'nearest'})}catch(e){}
 }
+S.pOpenChk={};
+function plChkHtml(t){
+  var a=t.subs||[],n=a.length,d=a.filter(function(x){return x.done}).length,open=S.pOpenChk[t.id],id=esc(t.id);
+  if(!n&&!open)return '';
+  var items=a.map(function(s,i){return '<li class="pl-ci'+(s.done?' done':'')+'"><button type="button" class="pl-ck" data-pa="sub" data-si="'+i+'" data-id="'+id+'" aria-pressed="'+(!!s.done)+'" aria-label="'+esc(s.t)+'"><span></span></button><span class="pl-ct">'+esc(s.t)+'</span><button type="button" class="pl-cx" data-pa="subdel" data-si="'+i+'" data-id="'+id+'" aria-label="Supprimer : '+esc(s.t)+'">×</button></li>'}).join('');
+  return '<details class="pl-chk" data-id="'+id+'"'+(open?' open':'')+'><summary>Liste de contrôle'+(n?' <b>'+d+'/'+n+'</b><span class="pl-bar"><i style="width:'+Math.round(100*d/n)+'%"></i></span>':'')+'</summary><ul>'+items+'</ul><form class="pl-addsub" data-id="'+id+'"><input maxlength="120" placeholder="Nouvel élément" aria-label="Nouvel élément"><button type="submit" class="mini">Ajouter</button></form></details>';
+}
 function plNoteHtml(n){
   n=String(n||'').trim();if(!n)return '';
   if(n.length<=90&&n.indexOf('\n')<0)return '<div class="pl-note"><b>Note</b><span>'+esc(n)+'</span></div>';
@@ -2934,13 +2950,14 @@ function plCard(t){
   var b='';
   if(t.st)b+='<button type="button" class="mini" data-pa="back" data-id="'+esc(t.id)+'">Reprendre</button>';
   else b+='<button type="button" class="mini" data-pa="susp" data-id="'+esc(t.id)+'">Suspendre</button><button type="button" class="mini" data-pa="wait" data-id="'+esc(t.id)+'">En attente</button>';
+  if(!(t.subs&&t.subs.length))b+='<button type="button" class="mini" data-pa="chk" data-id="'+esc(t.id)+'">Liste de contrôle</button>';
   b+='<button type="button" class="mini" data-pa="note" data-id="'+esc(t.id)+'">'+(t.notes?'Modifier la note':'Ajouter une note')+'</button>';
   b+='<button type="button" class="mini" data-pa="done" data-id="'+esc(t.id)+'">Terminer</button><button type="button" class="mini" data-pa="edit" data-id="'+esc(t.id)+'">Modifier</button>';
   var ci=impOf(t),tag=impTag(t);
   if(!t.st&&plSteps().length>1)b+='<button type="button" class="mini" data-pa="step" data-id="'+esc(t.id)+'">Étape : '+esc(stepOf(t))+'</button>';
   b+='<button type="button" class="mini" data-pa="imp" data-id="'+esc(t.id)+'">Importance : '+esc(ci?IMP_LBL[ci]:'Normale')+'</button>';
   return '<div class="pl-c'+(late?' late':'')+(t.st==='susp'?' susp':'')+(soon?' soon':'')+(ci==='urgent'?' imp-urgent':'')+'" data-card="'+esc(t.id)+'"><div class="pl-h"><strong>'+esc(t.text)+'</strong>'+(right?'<em class="'+(late?'late':'')+'">'+esc(right)+'</em>':'')+'</div>'+
-    '<div class="pl-m">'+tag+(meta.length?meta.join(' · '):'Aucun demandeur renseigné')+'</div>'+plNoteHtml(t.notes)+'<div class="actions" style="margin:0">'+b+'</div></div>';
+    '<div class="pl-m">'+tag+(meta.length?meta.join(' · '):'Aucun demandeur renseigné')+'</div>'+plNoteHtml(t.notes)+plChkHtml(t)+'<div class="actions" style="margin:0">'+b+'</div></div>';
 }
 S.pView=ls.get('plview','list')==='board'?'board':'list';
 function renderPilot(){
@@ -2991,6 +3008,9 @@ $('#p-pilotage').addEventListener('click',function(e){
   else if(a==='done')toggleTask(t,id);
   else if(a==='edit')plFormOpen(id);
   else if(a==='note')plNoteOpen(id);
+  else if(a==='chk'){S.pOpenChk[id]=true;renderPilot()}
+  else if(a==='sub'){var si=+b.dataset.si,ns=(t.subs||[]).map(function(x){return {t:x.t,done:!!x.done}});if(ns[si]){ns[si].done=!ns[si].done;S.pOpenChk[id]=true;guard(store.patch(id,{subs:ns}))}}
+  else if(a==='subdel'){var sj=+b.dataset.si;S.pOpenChk[id]=true;guard(store.patch(id,{subs:(t.subs||[]).filter(function(x,i){return i!==sj})}))}
   else if(a==='step'){var ss=plSteps(),nx=ss[(ss.indexOf(stepOf(t))+1)%ss.length];guard(store.patch(id,{step:nx==='En cours'?'':nx}));toast('Étape : '+nx)}
   else if(a==='imp'){guard(store.patch(id,{imp:IMP_NEXT[impOf(t)||'']}))}
 });
@@ -3143,6 +3163,14 @@ $('#p-projets').addEventListener('click',function(e){
 $('#tab-projets').addEventListener('click',function(){S.pjOpen='';S.pjDel=false;renderProjets()});
 
 
+/* ---------- liste de contrôle (Pilotage) ---------- */
+$('#pl-list').addEventListener('toggle',function(e){var d=e.target;if(d.classList&&d.classList.contains('pl-chk'))S.pOpenChk[d.dataset.id]=d.open},true);
+$('#pl-list').addEventListener('submit',function(e){
+  var f=e.target.closest('.pl-addsub');if(!f)return;e.preventDefault();
+  var id=f.dataset.id,t=S.tasks.find(function(x){return x.id===id}),v=f.querySelector('input').value.trim();if(!t||!v)return;
+  S.pOpenChk[id]=true;guard(store.patch(id,{subs:(t.subs||[]).concat([{t:v.slice(0,120),done:false}])}));
+  setTimeout(function(){var i=document.querySelector('.pl-chk[data-id="'+id+'"] .pl-addsub input');if(i)i.focus()},50);
+});
 /* ---------- glisser-déposer (Mac, souris) ---------- */
 (function(){
   var L=$('#pl-list'),drag=null;
@@ -3162,7 +3190,7 @@ $('#tab-projets').addEventListener('click',function(){S.pjOpen='';S.pjDel=false;
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v44';
+var APP_VER='v45';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
