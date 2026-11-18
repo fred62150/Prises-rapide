@@ -2863,7 +2863,9 @@ $('#open-tb').addEventListener('click',function(){setView(S.tab==='tb'?'taches':
 /* ---------- pilotage ---------- */
 S.pReq='';S.pImp='';S.pPrj='';S.pSheet=null;
 function plLists(){var d=S.styles.find(function(x){return x.plist});return {id:d&&d.id,req:(d&&Array.isArray(d.req)?d.req:[]),own:(d&&Array.isArray(d.own)?d.own:[]),steps:(d&&Array.isArray(d.steps)?d.steps:[]),projects:(d&&Array.isArray(d.projects)?d.projects:[])}}
-function plProjects(){var a=plLists().projects.slice();S.tasks.forEach(function(t){if(t.proj&&a.indexOf(t.proj)<0)a.push(t.proj)});return a}
+function plProjects(){var a=plLists().projects.slice();S.tasks.concat(S.styles.filter(function(x){return x.memo||x.meet})).forEach(function(t){if(t.proj&&a.indexOf(t.proj)<0)a.push(t.proj)});return a}
+function projDocs(n){return S.styles.filter(function(x){return (x.memo||x.meet)&&x.proj===n})}
+function projSelect(m,attr){if(!plProjects().length&&!m.proj)return '';return '<label class="mini" style="display:inline-flex;align-items:center;gap:6px">Projet <select '+attr+' aria-label="Projet">'+projOptions(m.proj||'')+'</select></label>'}
 function plSaveProjects(a){a=plClean(a).slice(0,50);var d=S.styles.find(function(x){return x.plist});if(d)guard(store.patch(d.id,{projects:a}));else guard(store.addStyle({plist:true,created:0,req:[],own:[],projects:a}))}
 function projOptions(sel){var l=plProjects().slice();if(sel&&l.indexOf(sel)<0)l.push(sel);return '<option value="">(aucun)</option>'+l.map(function(x){return '<option value="'+esc(x)+'"'+(x===sel?' selected':'')+'>'+esc(x)+'</option>'}).join('')}
 function plSteps(){var a=plLists().steps.slice();if(a.indexOf('En cours')<0)a.unshift('En cours');return a}
@@ -3078,7 +3080,7 @@ function renderProjets(){
     top.innerHTML='';
     body.innerHTML=names.length?names.map(function(n){
       var m=open.filter(function(t){return t.proj===n}),pil=m.filter(function(t){return t.pil}).length,late=m.filter(function(t){return !t.st&&groupOf(t)==='late'}).length;
-      return '<button type="button" class="card pj-card" data-pj="'+esc(n)+'"><strong>'+esc(n)+'</strong><small>'+pil+' action'+(pil>1?'s':'')+' de pilotage · '+(m.length-pil)+' tâche'+(m.length-pil>1?'s':'')+(late?' · '+late+' en retard':'')+'</small></button>';
+      return '<button type="button" class="card pj-card" data-pj="'+esc(n)+'"><strong>'+esc(n)+'</strong><small>'+pil+' action'+(pil>1?'s':'')+' de pilotage · '+(m.length-pil)+' tâche'+(m.length-pil>1?'s':'')+(late?' · '+late+' en retard':'')+(function(){var d=projDocs(n).filter(function(x){return !x.archived}),mm=d.filter(function(x){return x.memo}).length,rr=d.length-mm;return (mm?' · '+mm+' mémo'+(mm>1?'s':''):'')+(rr?' · '+rr+' réunion'+(rr>1?'s':''):'')})()+'</small></button>';
     }).join(''):'<div class="card empty"><strong>Aucun projet</strong>Crée un projet ci-dessus, puis range-y tes tâches et actions de Pilotage depuis leur fiche (champ « Projet »).</div>';
     return;
   }
@@ -3088,8 +3090,11 @@ function renderProjets(){
   var drow=function(t){return '<div class="tb-i" data-id="'+esc(t.id)+'"><button type="button" class="ck" data-tb="done" aria-label="Rouvrir : '+esc(t.text)+'"></button><div class="b"><strong style="text-decoration:line-through;opacity:.7">'+esc(t.text)+'</strong></div></div>'};
   var row=function(t){return (t.st?tbWatch(t):tbItem(t))+(t.notes?'<div style="margin:-4px 4px 10px 44px">'+plNoteHtml(t.notes)+'</div>':'')};
   var sec=function(title,a){return a.length?'<div class="tb-sec">'+title+'<em>'+a.length+'</em></div>'+a.map(row).join(''):''};
+  var docs=projDocs(n).filter(function(x){return !x.archived}).sort(function(a,b){return (b.created||0)-(a.created||0)});
+  var drow2=function(m){var t=m.memo?String(m.text||'').replace(/\s+/g,' ').trim().slice(0,90):(m.title||'Réunion');return '<button type="button" class="card pj-card" data-pjo="'+(m.memo?'memo':'meet')+'" data-id="'+esc(m.id)+'"><strong>'+esc(t||'(vide)')+'</strong><small>'+(m.memo?'Mémo':'Réunion')+'</small></button>'};
+  var dc=docs.length?'<div class="tb-sec">Carnet<em>'+docs.length+'</em></div>'+docs.map(drow2).join(''):'';
   var dh=dn.length?'<details class="pj-done"><summary>Terminées ('+dn.length+')</summary>'+dn.map(drow).join('')+'</details>':'';
-  body.innerHTML=((sec('Pilotage',pil)+sec('Tâches',tk))||(dn.length?'':'<div class="card empty"><strong>Rien dans ce projet</strong>Choisis ce projet dans la fiche d’une tâche ou d’une action de Pilotage.</div>'))+dh;
+  body.innerHTML=((sec('Pilotage',pil)+sec('Tâches',tk)+dc)||(dn.length?'':'<div class="card empty"><strong>Rien dans ce projet</strong>Choisis ce projet dans la fiche d’une tâche ou d’une action de Pilotage.</div>'))+dh;
 }
 $('#pj-form').addEventListener('submit',function(e){
   e.preventDefault();var v=plClean([$('#pj-name').value])[0];if(!v)return;
@@ -3107,15 +3112,23 @@ $('#p-projets').addEventListener('click',function(e){
       var nn=plClean([prompt('Nouveau nom du projet',old)||''])[0];if(!nn||nn===old)return;
       if(L.indexOf(nn)>=0){toast('Ce nom existe déjà');return}
       plSaveProjects(L.map(function(x){return x===old?nn:x}));
-      S.tasks.filter(function(t){return t.proj===old}).forEach(function(t){guard(store.patch(t.id,{proj:nn}))});
+      S.tasks.concat(projDocs(old)).filter(function(t){return t.proj===old}).forEach(function(t){guard(store.patch(t.id,{proj:nn}))});
       S.pjOpen=nn;renderProjets();return;
     }
     if(a==='del'){
       if(!S.pjDel){S.pjDel=true;renderProjets();return}
       plSaveProjects(L.filter(function(x){return x!==old}));
-      S.tasks.filter(function(t){return t.proj===old}).forEach(function(t){guard(store.patch(t.id,{proj:''}))});
+      S.tasks.concat(projDocs(old)).filter(function(t){return t.proj===old}).forEach(function(t){guard(store.patch(t.id,{proj:''}))});
       S.pjOpen='';S.pjDel=false;renderProjets();toast('Projet retiré : '+old);return;
     }
+  }
+  var po=e.target.closest('[data-pjo]');
+  if(po){
+    var did=po.dataset.id,kind=po.dataset.pjo;setView('carnet',true);
+    $('#cseg [data-cs="'+(kind==='memo'?'memos':'meets')+'"]').click();
+    if(kind==='memo'){M.open=did;renderMemos()}
+    else{var br=$('#mt-list [data-id="'+did+'"] [data-mr="open"]');if(br)br.click()}
+    return;
   }
   var b=e.target.closest('[data-tb]');if(!b)return;
   var it=b.closest('[data-id]'),id=it&&it.dataset.id,t=id&&S.tasks.find(function(x){return x.id===id});if(!t)return;
@@ -3128,7 +3141,7 @@ $('#p-projets').addEventListener('click',function(e){
 $('#tab-projets').addEventListener('click',function(){S.pjOpen='';S.pjDel=false;renderProjets()});
 
 /* ---------- démarrage ---------- */
-var APP_VER='v42';
+var APP_VER='v43';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
@@ -3259,7 +3272,7 @@ function memoRow(m){
     '<button type="button" class="more" data-ma="more" aria-expanded="'+open+'" aria-label="Options">'+IC.more+'</button>';
   if(open){
     h+='<div class="actions">'+
-      (m.archived?'':'<button type="button" class="mini" data-ma="pin">'+(m.pin?'Désépingler':'Épingler')+'</button>'+
+      projSelect(m,'data-mproj')+(m.archived?'':'<button type="button" class="mini" data-ma="pin">'+(m.pin?'Désépingler':'Épingler')+'</button>'+
         '<button type="button" class="mini" data-ma="task">Transformer en tâche</button><button type="button" class="mini" data-ma="edit">Modifier</button>')+
       '<button type="button" class="mini" data-ma="copy">Copier</button>'+
       '<button type="button" class="mini" data-ma="arch">'+(m.archived?'Restaurer':'Archiver')+'</button>'+
@@ -3313,9 +3326,16 @@ $('#m-f').addEventListener('click',function(e){
   if(t)M.type=t.dataset.ft===M.type?'':t.dataset.ft;else if(c)M.cat=c.dataset.fc===M.cat?'':c.dataset.fc;else return;
   renderMemos();
 });
+function setDocProj(e){
+  var s=e.target.closest('[data-mproj]');if(!s)return;
+  var li=s.closest('.memo'),id=li&&li.dataset.id;if(!id)return;
+  guard(store.patch(id,{proj:s.value}));toast(s.value?'Rangé dans : '+s.value:'Retiré du projet');
+}
+$('#m-list').addEventListener('change',setDocProj);
+$('#mt-list').addEventListener('change',setDocProj);
 $('#m-arch').addEventListener('click',function(){M.arch=!M.arch;M.open=null;renderMemos()});
 $('#m-list').addEventListener('click',function(e){
-  if(e.target.closest('a'))return;
+  if(e.target.closest('a')||e.target.closest('[data-mproj]'))return;
   var b=e.target.closest('[data-ma]');if(!b)return;
   var li=b.closest('.memo'),id=li&&li.dataset.id,m=id&&S.styles.find(function(x){return x.id===id&&x.memo}),act=b.dataset.ma;
   if(!m)return;
@@ -3425,7 +3445,7 @@ function renderMtList(){
     var open=MT.open===m.id,dd=m.date?new Date(m.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):'';
     return '<li class="memo'+(m.id===MT.id?' pin':'')+'" data-id="'+esc(m.id)+'"><div class="memo-b" data-mr="open"><div class="memo-t">'+esc(m.title||'Réunion')+'</div><div class="metarow"><span class="meta">'+esc(dd)+'</span><span class="tg'+(m.report?' pro':'')+'">'+(m.report?'Compte rendu prêt':'Notes seulement')+'</span></div></div>'+
       '<button type="button" class="more" data-mr="more" aria-expanded="'+open+'" aria-label="Options">'+IC.more+'</button>'+
-      (open?'<div class="actions"><button type="button" class="mini" data-mr="open">Ouvrir</button><button type="button" class="mini danger" data-mr="del">'+(MT.confirm===m.id?'Confirmer : supprimer':'Supprimer')+'</button></div>':'')+'</li>';
+      (open?'<div class="actions"><button type="button" class="mini" data-mr="open">Ouvrir</button>'+projSelect(m,'data-mproj')+'<button type="button" class="mini danger" data-mr="del">'+(MT.confirm===m.id?'Confirmer : supprimer':'Supprimer')+'</button></div>':'')+'</li>';
   }).join('')+'</ul>';
 }
 function renderMtResult(){
@@ -3535,6 +3555,7 @@ $('#mt-result').addEventListener('click',function(e){
   }
 });
 $('#mt-list').addEventListener('click',function(e){
+  if(e.target.closest('[data-mproj]'))return;
   var b=e.target.closest('[data-mr]');if(!b)return;
   var li=b.closest('.memo'),id=li&&li.dataset.id,m=id&&S.styles.find(function(x){return x.id===id&&x.meet}),act=b.dataset.mr;
   if(!m)return;
