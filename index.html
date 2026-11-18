@@ -500,6 +500,13 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
   .pl-board{margin-right:0;padding-right:0}
   .pl-col{flex:1 0 230px}
 }
+/* ---- v39 : projets ---- */
+.panels:not([data-view="projets"]) #p-projets{display:none}
+.panels[data-view="projets"] .panel:not(#p-projets){display:none}
+@media (min-width:900px){.panels[data-view="projets"]{grid-template-columns:minmax(0,820px)}}
+.pj-card{display:block;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;color:inherit;cursor:pointer;font:inherit}
+.pj-card small{display:block;color:var(--muted);margin-top:2px;font-size:13.5px}
+#pj-form{margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -719,6 +726,11 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
       <div id="tb-list"></div>
       <div id="tb-watch"></div>
     </section>
+    <section class="panel" id="p-projets" aria-label="Projets">
+      <form class="card composer" id="pj-form" autocomplete="off"><div class="row"><input id="pj-name" type="text" maxlength="60" enterkeyhint="done" placeholder="Nouveau projet, puis Entrée" aria-label="Nom du nouveau projet"><button class="btn-add" type="submit" aria-label="Créer le projet"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div></form>
+      <div id="pj-top"></div>
+      <div id="pj-body"></div>
+    </section>
     <section class="panel" id="p-pilotage" aria-label="Pilotage">
       <button type="button" class="back" data-back>‹ Retour aux tâches</button>
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button type="button" class="mini primary" id="pl-new">+ Nouvelle action</button></div>
@@ -728,6 +740,7 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
         <div class="when"><label class="fld">Demandeur<select id="pf-req"></select><input id="pf-req-n" maxlength="60" placeholder="Nouveau demandeur" hidden></label><label class="fld">Porteur<select id="pf-own"></select><input id="pf-own-n" maxlength="60" placeholder="Nouveau porteur" hidden></label></div>
         <div class="when"><label class="fld">Importance<select id="pf-imp"><option value="">Normale</option><option value="important">Important</option><option value="urgent">Urgent</option><option value="low">Faible</option></select></label><label class="fld">Échéance<input type="date" id="pf-due"></label></div>
         <div class="when"><label class="fld">Statut<select id="pf-st"><option value="">En cours</option><option value="wait">En attente</option><option value="susp">Suspendue</option></select></label><label class="fld" id="pf-stepw">Étape<select id="pf-step"></select></label></div>
+        <div class="when"><label class="fld">Projet<select id="pf-proj"></select></label></div>
         <div class="when" id="pf-more" hidden><label class="fld"><span id="pf-bl">Suspendue par</span><input id="pf-by" list="pl-dl" maxlength="120"></label><label class="fld"><span id="pf-dl">Reprise prévue</span><input type="date" id="pf-res"></label></div>
         <label class="fld" style="margin-top:10px">Notes<textarea class="edit" id="pf-notes" rows="2" maxlength="2000" placeholder="Détails, lien, contact…"></textarea></label>
         <p class="note err" id="pf-err" hidden style="margin:8px 0 0"></p>
@@ -945,6 +958,7 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
   <button class="tab" id="tab-tb" aria-label="Aujourd’hui" title="Aujourd’hui"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Aujourd’hui</button>
   <button class="tab" id="tab-taches" aria-current="page" aria-label="Tâches" title="Tâches"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Tâches <span class="badge" id="badge" hidden>0</span></button>
   <button class="tab" id="tab-pilotage" aria-label="Pilotage" title="Pilotage"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Pilotage</button>
+  <button class="tab" id="tab-projets" aria-label="Projets" title="Projets"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projets</button>
   <button class="tab" id="tab-carnet" aria-label="Carnet" title="Carnet"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg>Carnet</button>
   <button class="tab" id="tab-relecture" aria-label="Messages" title="Messages"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg>Messages</button>
   <button class="tab" id="tab-trajets" aria-label="Trajets" title="Trajets"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/></svg>Trajets</button>
@@ -1250,6 +1264,7 @@ function editBox(t){
     '<label class="fld">Rappel<select id="e-rem" data-k="'+(h?'t':'d')+'">'+(h?remOptions(r):remDayOptions(r))+'</select></label></div>'+
     '<div class="when"><label class="fld">Catégorie<select id="e-cat">'+catOptions(t.cat)+'</select></label>'+
     '<label class="fld">Répéter<select id="e-rep">'+repOptions(t.repeat)+'</select></label></div>'+
+    ((plProjects().length||t.proj)?'<div class="when"><label class="fld">Projet<select id="e-proj">'+projOptions(t.proj||'')+'</select></label></div>':'')+
     '<label class="fld">Notes<textarea class="edit" id="e-notes" maxlength="2000" placeholder="Détails, lien, numéro…">'+esc(t.notes||'')+'</textarea></label>'+
     '<div class="esubs"><span class="lab" style="margin:0">Sous-tâches</span>'+
     S.editSubs.map(function(s,i){return '<div class="esub"><input class="e-sub" data-si="'+i+'" value="'+esc(s.t)+'" maxlength="120" placeholder="Sous-tâche" aria-label="Sous-tâche '+(i+1)+'"><button type="button" class="mini danger" data-act="delsub" data-si="'+i+'" aria-label="Retirer la sous-tâche">✕</button></div>'}).join('')+
@@ -1291,10 +1306,10 @@ function cmp(a,b){
   return (b.created||0)-(a.created||0);
 }
 function renderTasks(){
-  renderAgenda();renderPilot();renderTB();
+  renderAgenda();renderPilot();renderTB();renderProjets();
   var box=$('#list');
   var act=document.activeElement&&document.activeElement.id,keep=null;
-  if($('#edit-field'))keep={t:$('#edit-field').value,d:$('#e-date').value,h:$('#e-time').value,r:$('#e-rem').value,c:$('#e-cat').value,p:$('#e-rep').value,n:$('#e-notes').value};
+  if($('#edit-field'))keep={t:$('#edit-field').value,d:$('#e-date').value,h:$('#e-time').value,r:$('#e-rem').value,c:$('#e-cat').value,p:$('#e-rep').value,n:$('#e-notes').value,j:$('#e-proj')?$('#e-proj').value:undefined};
   var all=S.tasks.filter(catOk).filter(function(t){return !t.pil}),open=all.filter(function(t){return !t.done}),done=all.filter(function(t){return t.done});
   var h='';
   if(S.mode==='connecting'){
@@ -1327,7 +1342,7 @@ function renderTasks(){
   }
   box.innerHTML=h;
   if($('#edit-field')){
-    if(keep){$('#edit-field').value=keep.t;$('#e-date').value=keep.d;$('#e-time').value=keep.h;fixRem(!!keep.h);$('#e-rem').value=keep.r;$('#e-cat').value=keep.c;$('#e-rep').value=keep.p;$('#e-notes').value=keep.n;
+    if(keep){$('#edit-field').value=keep.t;$('#e-date').value=keep.d;$('#e-time').value=keep.h;fixRem(!!keep.h);$('#e-rem').value=keep.r;$('#e-cat').value=keep.c;if($('#e-proj')&&keep.j!==undefined)$('#e-proj').value=keep.j;$('#e-rep').value=keep.p;$('#e-notes').value=keep.n;
       var back=act&&$('#'+act);(back||$('#edit-field')).focus()}
     else{$('#edit-field').focus();$('#edit-field').select()}
   }
@@ -1395,9 +1410,9 @@ function saveEdit(){
   if(time&&!date)date=ymd(new Date());
   var due=date?date+(time?'T'+time:''):null;
   var subs=S.editSubs.map(function(x){return {t:String(x.t).trim(),done:!!x.done}}).filter(function(x){return x.t});
-  var ec=$('#e-cat').value,er=$('#e-rep').value,en=$('#e-notes').value.trim();
+  var ec=$('#e-cat').value,er=$('#e-rep').value,en=$('#e-notes').value.trim(),ej=$('#e-proj')?$('#e-proj').value:(t.proj||'');
   S.edit=null;S.editSubs=[];
-  guard(store.patch(id,{text:text,due:due,remind:(due&&rem!=='')?+rem:null,cat:ec,repeat:due?er:'',notes:en,subs:subs}));
+  guard(store.patch(id,{text:text,due:due,remind:(due&&rem!=='')?+rem:null,cat:ec,repeat:due?er:'',notes:en,subs:subs,proj:ej}));
   if(S.mode==='cloud')renderTasks();
 }
 function toggleTask(t,id){
@@ -2256,7 +2271,7 @@ $('#copy-ex').addEventListener('click',function(){
 });
 
 /* ---------- onglets ---------- */
-var VIEWS=['taches','relecture','trajets','carnet','reglages','pilotage','tb'];
+var VIEWS=['taches','relecture','trajets','carnet','reglages','pilotage','tb','projets'];
 
 /* ---------- étape 3 : extraire des tâches / aider à répondre ---------- */
 var X={busy:false,error:'',items:null,note:'',mode:ls.get('mode','review')};
@@ -2837,7 +2852,10 @@ $('#open-tb').addEventListener('click',function(){setView(S.tab==='tb'?'taches':
 
 /* ---------- pilotage ---------- */
 S.pReq='';S.pImp='';S.pSheet=null;
-function plLists(){var d=S.styles.find(function(x){return x.plist});return {id:d&&d.id,req:(d&&Array.isArray(d.req)?d.req:[]),own:(d&&Array.isArray(d.own)?d.own:[]),steps:(d&&Array.isArray(d.steps)?d.steps:[])}}
+function plLists(){var d=S.styles.find(function(x){return x.plist});return {id:d&&d.id,req:(d&&Array.isArray(d.req)?d.req:[]),own:(d&&Array.isArray(d.own)?d.own:[]),steps:(d&&Array.isArray(d.steps)?d.steps:[]),projects:(d&&Array.isArray(d.projects)?d.projects:[])}}
+function plProjects(){return plLists().projects}
+function plSaveProjects(a){a=plClean(a).slice(0,50);var d=S.styles.find(function(x){return x.plist});if(d)guard(store.patch(d.id,{projects:a}));else guard(store.addStyle({plist:true,created:0,req:[],own:[],projects:a}))}
+function projOptions(sel){var l=plProjects().slice();if(sel&&l.indexOf(sel)<0)l.push(sel);return '<option value="">(aucun)</option>'+l.map(function(x){return '<option value="'+esc(x)+'"'+(x===sel?' selected':'')+'>'+esc(x)+'</option>'}).join('')}
 function plSteps(){var a=plLists().steps.slice();if(a.indexOf('En cours')<0)a.unshift('En cours');return a}
 function stepOf(t){return t.step&&plSteps().indexOf(t.step)>=0?t.step:'En cours'}
 function plClean(a){var o=[];(a||[]).forEach(function(x){x=String(x||'').trim().slice(0,60);if(x&&o.indexOf(x)<0)o.push(x)});return o.slice(0,100)}
@@ -2883,6 +2901,7 @@ function plCard(t){
   var meta=[];
   if(t.req)meta.push(esc(t.req));
   if(t.owner)meta.push('Porteur : '+esc(t.owner));
+  if(t.proj)meta.push('Projet : '+esc(t.proj));
   if(t.st==='susp'&&t.by)meta.push('Suspendue par : '+esc(t.by));
   if(t.st==='wait'&&t.by)meta.push('En attente de : '+esc(t.by));
   var b='';
@@ -2970,6 +2989,7 @@ function plFormOpen(id){
   $('#pf-imp').value=t?(impOf(t)||''):'';
   $('#pf-due').value=t&&t.due?t.due.slice(0,10):'';
   $('#pf-st').value=t&&t.st||'';
+  $('#pf-proj').innerHTML=projOptions(t&&t.proj||'');
   $('#pf-step').innerHTML=plSteps().map(function(n){return '<option value="'+esc(n)+'">'+esc(n)+'</option>'}).join('');$('#pf-step').value=t?stepOf(t):'En cours';
   $('#pf-by').value=t&&t.by||'';
   $('#pf-res').value=t&&t.resume||'';
@@ -3002,15 +3022,73 @@ $('#pl-form').addEventListener('submit',function(e){
   var due=dt?((t&&t.due&&t.due.slice(0,10)===dt)?t.due:dt):null;
   var rq=plVal('pf-req'),ow=plVal('pf-own'),LL=plLists();
   if((rq&&LL.req.indexOf(rq)<0)||(ow&&LL.own.indexOf(ow)<0))plSaveLists(rq&&LL.req.indexOf(rq)<0?LL.req.concat([rq]):LL.req,ow&&LL.own.indexOf(ow)<0?LL.own.concat([ow]):LL.own);
-  var p={text:tx,req:rq,owner:ow,imp:$('#pf-imp').value,due:due,st:st,by:st?by:'',resume:st?res:'',notes:$('#pf-notes').value.trim(),pil:true,step:st?'':(($('#pf-step').value||'En cours')==='En cours'?'':$('#pf-step').value)};
+  var p={text:tx,req:rq,owner:ow,imp:$('#pf-imp').value,due:due,st:st,by:st?by:'',resume:st?res:'',notes:$('#pf-notes').value.trim(),pil:true,proj:$('#pf-proj').value,step:st?'':(($('#pf-step').value||'En cours')==='En cours'?'':$('#pf-step').value)};
   S.pForm=null;$('#pl-form').hidden=true;
   if(t){guard(store.patch(t.id,p));toast('Action modifiée')}
   else{guard(store.add(Object.assign({done:false,star:false,imp:'',remind:null,cat:'',subs:[],repeat:'',created:Date.now()},p)));toast('Action ajoutée à Pilotage')}
 });
 $('#open-pilot').addEventListener('click',function(){setView(S.tab==='pilotage'?'taches':'pilotage',true)});
 
+
+/* ---------- projets ---------- */
+S.pjOpen='';S.pjDel=false;
+function renderProjets(){
+  var body=$('#pj-body'),top=$('#pj-top');if(!body)return;
+  var names=plProjects();if(S.pjOpen&&names.indexOf(S.pjOpen)<0)S.pjOpen='';
+  var open=S.tasks.filter(function(t){return !t.done});
+  $('#pj-form').hidden=!!S.pjOpen;
+  if(!S.pjOpen){
+    top.innerHTML='';
+    body.innerHTML=names.length?names.map(function(n){
+      var m=open.filter(function(t){return t.proj===n}),pil=m.filter(function(t){return t.pil}).length,late=m.filter(function(t){return !t.st&&groupOf(t)==='late'}).length;
+      return '<button type="button" class="card pj-card" data-pj="'+esc(n)+'"><strong>'+esc(n)+'</strong><small>'+pil+' action'+(pil>1?'s':'')+' de pilotage · '+(m.length-pil)+' tâche'+(m.length-pil>1?'s':'')+(late?' · '+late+' en retard':'')+'</small></button>';
+    }).join(''):'<div class="card empty"><strong>Aucun projet</strong>Crée un projet ci-dessus, puis range-y tes tâches et actions de Pilotage depuis leur fiche (champ « Projet »).</div>';
+    return;
+  }
+  var n=S.pjOpen,m=open.filter(function(t){return t.proj===n}).sort(cmp),pil=m.filter(function(t){return t.pil}),tk=m.filter(function(t){return !t.pil});
+  top.innerHTML='<button type="button" class="back" data-pjback>‹ Projets</button><h2 class="h2" style="margin:4px 0 10px;overflow-wrap:anywhere">'+esc(n)+'</h2><div class="actions" style="padding:0;margin-bottom:12px"><button type="button" class="mini primary" data-pja="newpil">+ Action de pilotage</button><button type="button" class="mini" data-pja="ren">Renommer</button><button type="button" class="mini" data-pja="del">'+(S.pjDel?'Confirmer : retirer le projet':'Supprimer le projet')+'</button></div>'+(S.pjDel?'<p class="note" style="margin:0 0 10px">Les tâches et actions restent, elles n’ont simplement plus de projet.</p>':'');
+  var row=function(t){return t.st?tbWatch(t):tbItem(t)};
+  var sec=function(title,a){return a.length?'<div class="tb-sec">'+title+'<em>'+a.length+'</em></div>'+a.map(row).join(''):''};
+  body.innerHTML=(sec('Pilotage',pil)+sec('Tâches',tk))||'<div class="card empty"><strong>Rien dans ce projet</strong>Choisis ce projet dans la fiche d’une tâche ou d’une action de Pilotage.</div>';
+}
+$('#pj-form').addEventListener('submit',function(e){
+  e.preventDefault();var v=plClean([$('#pj-name').value])[0];if(!v)return;
+  var L=plProjects();if(L.indexOf(v)<0)plSaveProjects(L.concat([v]));
+  $('#pj-name').value='';S.pjOpen=v;S.pjDel=false;renderProjets();
+});
+$('#p-projets').addEventListener('click',function(e){
+  var o=e.target.closest('[data-pj]');if(o){S.pjOpen=o.dataset.pj;S.pjDel=false;renderProjets();return}
+  if(e.target.closest('[data-pjback]')){S.pjOpen='';S.pjDel=false;renderProjets();return}
+  var pa=e.target.closest('[data-pja]');
+  if(pa){
+    var a=pa.dataset.pja,old=S.pjOpen,L=plProjects();
+    if(a==='newpil'){setView('pilotage',true);plFormOpen(null);$('#pf-proj').value=old;return}
+    if(a==='ren'){
+      var nn=plClean([prompt('Nouveau nom du projet',old)||''])[0];if(!nn||nn===old)return;
+      if(L.indexOf(nn)>=0){toast('Ce nom existe déjà');return}
+      plSaveProjects(L.map(function(x){return x===old?nn:x}));
+      S.tasks.filter(function(t){return t.proj===old}).forEach(function(t){guard(store.patch(t.id,{proj:nn}))});
+      S.pjOpen=nn;renderProjets();return;
+    }
+    if(a==='del'){
+      if(!S.pjDel){S.pjDel=true;renderProjets();return}
+      plSaveProjects(L.filter(function(x){return x!==old}));
+      S.tasks.filter(function(t){return t.proj===old}).forEach(function(t){guard(store.patch(t.id,{proj:''}))});
+      S.pjOpen='';S.pjDel=false;renderProjets();toast('Projet retiré : '+old);return;
+    }
+  }
+  var b=e.target.closest('[data-tb]');if(!b)return;
+  var it=b.closest('[data-id]'),id=it&&it.dataset.id,t=id&&S.tasks.find(function(x){return x.id===id});if(!t)return;
+  var ab=b.dataset.tb;
+  if(ab==='done')toggleTask(t,id);
+  else if(ab==='back'){guard(store.patch(id,{st:'',by:'',resume:''}));toast('Reprise : '+t.text)}
+  else if(ab==='open')setView(t.pil?'pilotage':'taches',true);
+});
+
+$('#tab-projets').addEventListener('click',function(){S.pjOpen='';S.pjDel=false;renderProjets()});
+
 /* ---------- démarrage ---------- */
-var APP_VER='v38';
+var APP_VER='v39';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
