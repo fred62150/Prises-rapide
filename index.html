@@ -496,9 +496,9 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
 .pl-ch em{font-style:normal;font-variant-numeric:tabular-nums;background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:1px 8px}
 .pl-ce{margin:4px;font-size:13.5px;color:var(--muted)}
 @media (min-width:900px){
-  .panels[data-view="pilotage"][data-pv="board"]{grid-template-columns:minmax(0,1100px)}
-  .pl-board{overflow-x:visible;margin-right:0;padding-right:0}
-  .pl-col{flex:1 1 0;min-width:0}
+  .panels[data-view="pilotage"][data-plv="board"]{grid-template-columns:minmax(0,1100px)}
+  .pl-board{margin-right:0;padding-right:0}
+  .pl-col{flex:1 0 230px}
 }
 </style>
 </head>
@@ -727,7 +727,7 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
         <label class="fld">Action<input id="pf-text" maxlength="200" placeholder="Ce qui est demandé"></label>
         <div class="when"><label class="fld">Demandeur<select id="pf-req"></select><input id="pf-req-n" maxlength="60" placeholder="Nouveau demandeur" hidden></label><label class="fld">Porteur<select id="pf-own"></select><input id="pf-own-n" maxlength="60" placeholder="Nouveau porteur" hidden></label></div>
         <div class="when"><label class="fld">Importance<select id="pf-imp"><option value="">Normale</option><option value="important">Important</option><option value="urgent">Urgent</option><option value="low">Faible</option></select></label><label class="fld">Échéance<input type="date" id="pf-due"></label></div>
-        <div class="when"><label class="fld">Statut<select id="pf-st"><option value="">En cours</option><option value="wait">En attente</option><option value="susp">Suspendue</option></select></label></div>
+        <div class="when"><label class="fld">Statut<select id="pf-st"><option value="">En cours</option><option value="wait">En attente</option><option value="susp">Suspendue</option></select></label><label class="fld" id="pf-stepw">Étape<select id="pf-step"></select></label></div>
         <div class="when" id="pf-more" hidden><label class="fld"><span id="pf-bl">Suspendue par</span><input id="pf-by" list="pl-dl" maxlength="120"></label><label class="fld"><span id="pf-dl">Reprise prévue</span><input type="date" id="pf-res"></label></div>
         <label class="fld" style="margin-top:10px">Notes<textarea class="edit" id="pf-notes" rows="2" maxlength="2000" placeholder="Détails, lien, contact…"></textarea></label>
         <p class="note err" id="pf-err" hidden style="margin:8px 0 0"></p>
@@ -826,6 +826,8 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
         <p class="note" style="margin:0">Un nom par ligne. Ils remplissent les listes déroulantes « Demandeur » et « Porteur ». Un nouveau nom saisi dans le formulaire s’ajoute tout seul.</p>
         <label class="fld">Demandeurs<textarea class="edit" id="pls-req" rows="4" maxlength="3000" placeholder="Direction&#10;Service RH"></textarea></label>
         <label class="fld">Porteurs<textarea class="edit" id="pls-own" rows="4" maxlength="3000" placeholder="Moi&#10;Équipe support"></textarea></label>
+        <label class="fld">Étapes du Pilotage (une par ligne, dans l’ordre des colonnes)<textarea class="edit" id="pls-steps" rows="4" maxlength="600" placeholder="À cadrer&#10;En cours&#10;À valider"></textarea></label>
+        <p class="note" style="margin:0 0 8px">« En cours » existe toujours (placé en premier si tu ne l’écris pas). « En attente » et « Suspendue » restent à part. Renommer une étape remet ses actions dans « En cours ».</p>
         <div class="actions" style="padding:0"><button type="button" class="mini primary" id="pls-save">Enregistrer les listes</button></div>
       </div>
       <div class="card editor">
@@ -2835,11 +2837,14 @@ $('#open-tb').addEventListener('click',function(){setView(S.tab==='tb'?'taches':
 
 /* ---------- pilotage ---------- */
 S.pReq='';S.pImp='';S.pSheet=null;
-function plLists(){var d=S.styles.find(function(x){return x.plist});return {id:d&&d.id,req:(d&&Array.isArray(d.req)?d.req:[]),own:(d&&Array.isArray(d.own)?d.own:[])}}
+function plLists(){var d=S.styles.find(function(x){return x.plist});return {id:d&&d.id,req:(d&&Array.isArray(d.req)?d.req:[]),own:(d&&Array.isArray(d.own)?d.own:[]),steps:(d&&Array.isArray(d.steps)?d.steps:[])}}
+function plSteps(){var a=plLists().steps.slice();if(a.indexOf('En cours')<0)a.unshift('En cours');return a}
+function stepOf(t){return t.step&&plSteps().indexOf(t.step)>=0?t.step:'En cours'}
 function plClean(a){var o=[];(a||[]).forEach(function(x){x=String(x||'').trim().slice(0,60);if(x&&o.indexOf(x)<0)o.push(x)});return o.slice(0,100)}
-function plSaveLists(req,own){
+function plSaveLists(req,own,steps){
   req=plClean(req);own=plClean(own);var d=S.styles.find(function(x){return x.plist});
-  if(d)guard(store.patch(d.id,{req:req,own:own}));else guard(store.addStyle({plist:true,req:req,own:own,created:0}));
+  var p={req:req,own:own};if(steps)p.steps=plClean(steps).slice(0,12);
+  if(d)guard(store.patch(d.id,p));else guard(store.addStyle(Object.assign({plist:true,created:0},p)));
 }
 function plFillSel(id,list,cur){
   var sel=$('#'+id),l=list.slice();if(cur&&l.indexOf(cur)<0)l.push(cur);
@@ -2849,13 +2854,14 @@ function plFillSel(id,list,cur){
 function plVal(id){var v=$('#'+id).value;return v==='__new'?$('#'+id+'-n').value.trim():v}
 ['pf-req','pf-own'].forEach(function(id){$('#'+id).addEventListener('change',function(){var n=$('#'+id+'-n');n.hidden=this.value!=='__new';if(!n.hidden)n.focus()})});
 function renderPls(){
-  var L=plLists(),a=$('#pls-req'),b=$('#pls-own');if(!a)return;
+  var L=plLists(),a=$('#pls-req'),b=$('#pls-own'),c=$('#pls-steps');if(!a)return;
+  if(c&&document.activeElement!==c)c.value=(L.steps.length?L.steps:['En cours']).join('\n');
   if(document.activeElement!==a)a.value=L.req.join('\n');
   if(document.activeElement!==b)b.value=L.own.join('\n');
 }
 $('#pls-save').addEventListener('click',function(){
-  plSaveLists($('#pls-req').value.split('\n'),$('#pls-own').value.split('\n'));
-  $('#pls-req').blur();$('#pls-own').blur();toast('Listes enregistrées');setTimeout(renderPls,50);
+  plSaveLists($('#pls-req').value.split('\n'),$('#pls-own').value.split('\n'),$('#pls-steps').value.split('\n'));
+  $('#pls-req').blur();$('#pls-own').blur();$('#pls-steps').blur();toast('Listes enregistrées');setTimeout(renderPls,50);
 });
 function plSheetOpen(id,mode){
   var t=S.tasks.find(function(x){return x.id===id});if(!t)return;
@@ -2884,6 +2890,7 @@ function plCard(t){
   else b+='<button type="button" class="mini" data-pa="susp" data-id="'+esc(t.id)+'">Suspendre</button><button type="button" class="mini" data-pa="wait" data-id="'+esc(t.id)+'">En attente</button>';
   b+='<button type="button" class="mini" data-pa="done" data-id="'+esc(t.id)+'">Terminer</button><button type="button" class="mini" data-pa="edit" data-id="'+esc(t.id)+'">Modifier</button>';
   var ci=impOf(t),tag=impTag(t);
+  if(!t.st&&plSteps().length>1)b+='<button type="button" class="mini" data-pa="step" data-id="'+esc(t.id)+'">Étape : '+esc(stepOf(t))+'</button>';
   b+='<button type="button" class="mini" data-pa="imp" data-id="'+esc(t.id)+'">Importance : '+esc(ci?IMP_LBL[ci]:'Normale')+'</button>';
   return '<div class="pl-c'+(late?' late':'')+(t.st==='susp'?' susp':'')+(soon?' soon':'')+(ci==='urgent'?' imp-urgent':'')+'"><div class="pl-h"><strong>'+esc(t.text)+'</strong>'+(right?'<em class="'+(late?'late':'')+'">'+esc(right)+'</em>':'')+'</div>'+
     '<div class="pl-m">'+tag+(meta.length?meta.join(' · '):'Aucun demandeur renseigné')+'</div><div class="actions" style="margin:0">'+b+'</div></div>';
@@ -2906,20 +2913,21 @@ function renderPilot(){
   var f=function(t){return (!S.pReq||t.req===S.pReq)&&(!S.pImp||impOf(t)===S.pImp)};
   var cmpR=function(a,b){return (a.resume||'9')<(b.resume||'9')?-1:1};
   var rF=run.filter(f).sort(cmp),sF=susp.filter(f).sort(cmpR),wF=wait.filter(f).sort(cmpR);
+  var STEPS=plSteps(),byStep=function(n){return rF.filter(function(t){return stepOf(t)===n})};
   var empty='<div class="card empty"><strong>Rien à piloter</strong>Ajoutez une action avec « + Nouvelle action », ou envoyez une tâche vers Pilotage depuis ses options.</div>';
-  $('#panels').dataset.pv=S.pView;
+  $('#panels').dataset.plv=S.pView;
   document.querySelectorAll('#pl-seg [data-pv]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.pv===S.pView))});
   if(S.pView==='board'){
     var col=function(title,items){return '<section class="pl-col" aria-label="'+title+'"><h3 class="pl-ch">'+title+'<em>'+items.length+'</em></h3>'+(items.length?items.map(plCard).join(''):'<p class="pl-ce">Aucune action</p>')+'</section>'};
-    $('#pl-list').innerHTML=open.length?'<div class="pl-board">'+col('En cours',rF)+col('En attente',wF)+col('Suspendues',sF)+'</div>':empty;
+    $('#pl-list').innerHTML=open.length?'<div class="pl-board">'+STEPS.map(function(n){return col(n,byStep(n))}).join('')+col('En attente',wF)+col('Suspendues',sF)+'</div>':empty;
     return;
   }
   var sec=function(title,items){return items.length?'<div class="pl-sec">'+title+' ('+items.length+')</div>'+items.map(plCard).join(''):''};
-  var h=sec('En cours',rF)+sec('Suspendues',sF)+sec('En attente',wF);
+  var h=STEPS.map(function(n){return sec(n,byStep(n))}).join('')+sec('Suspendues',sF)+sec('En attente',wF);
   $('#pl-list').innerHTML=h||empty;
 }
 $('#p-pilotage').addEventListener('click',function(e){
-  var pv=e.target.closest('[data-pv]');if(pv){S.pView=pv.dataset.pv==='board'?'board':'list';ls.set('plview',S.pView);renderPilot();return}
+  var pv=e.target.closest('#pl-seg [data-pv]');if(pv){S.pView=pv.dataset.pv==='board'?'board':'list';ls.set('plview',S.pView);renderPilot();return}
   var c=e.target.closest('[data-pr]');if(c){S.pReq=c.dataset.pr;renderPilot();return}
   var ci=e.target.closest('[data-pi]');if(ci){S.pImp=ci.dataset.pi;renderPilot();return}
   if(e.target.closest('#pl-cancel')){S.pSheet=null;$('#pl-sheet').hidden=true;return}
@@ -2929,6 +2937,7 @@ $('#p-pilotage').addEventListener('click',function(e){
   else if(a==='back'){guard(store.patch(id,{st:'',by:'',resume:''}));toast('Reprise : '+t.text)}
   else if(a==='done')toggleTask(t,id);
   else if(a==='edit')plFormOpen(id);
+  else if(a==='step'){var ss=plSteps(),nx=ss[(ss.indexOf(stepOf(t))+1)%ss.length];guard(store.patch(id,{step:nx==='En cours'?'':nx}));toast('Étape : '+nx)}
   else if(a==='imp'){guard(store.patch(id,{imp:IMP_NEXT[impOf(t)||'']}))}
 });
 $('#pl-sheet').addEventListener('submit',function(e){
@@ -2950,6 +2959,7 @@ function plFormSync(){
   $('#pf-dl').textContent=st==='wait'?'Relance prévue':'Reprise prévue';
   $('#pf-by').placeholder=st==='wait'?'Une personne ou un service':'L’action qui a pris le dessus';
   if(st&&!$('#pf-res').value)$('#pf-res').value=ymd(addDays(3));
+  $('#pf-stepw').style.display=(st||plSteps().length<2)?'none':'';
 }
 function plFormOpen(id){
   var t=id?S.tasks.find(function(x){return x.id===id}):null;if(id&&!t)return;
@@ -2960,6 +2970,7 @@ function plFormOpen(id){
   $('#pf-imp').value=t?(impOf(t)||''):'';
   $('#pf-due').value=t&&t.due?t.due.slice(0,10):'';
   $('#pf-st').value=t&&t.st||'';
+  $('#pf-step').innerHTML=plSteps().map(function(n){return '<option value="'+esc(n)+'">'+esc(n)+'</option>'}).join('');$('#pf-step').value=t?stepOf(t):'En cours';
   $('#pf-by').value=t&&t.by||'';
   $('#pf-res').value=t&&t.resume||'';
   $('#pf-notes').value=t&&t.notes||'';
@@ -2991,7 +3002,7 @@ $('#pl-form').addEventListener('submit',function(e){
   var due=dt?((t&&t.due&&t.due.slice(0,10)===dt)?t.due:dt):null;
   var rq=plVal('pf-req'),ow=plVal('pf-own'),LL=plLists();
   if((rq&&LL.req.indexOf(rq)<0)||(ow&&LL.own.indexOf(ow)<0))plSaveLists(rq&&LL.req.indexOf(rq)<0?LL.req.concat([rq]):LL.req,ow&&LL.own.indexOf(ow)<0?LL.own.concat([ow]):LL.own);
-  var p={text:tx,req:rq,owner:ow,imp:$('#pf-imp').value,due:due,st:st,by:st?by:'',resume:st?res:'',notes:$('#pf-notes').value.trim(),pil:true};
+  var p={text:tx,req:rq,owner:ow,imp:$('#pf-imp').value,due:due,st:st,by:st?by:'',resume:st?res:'',notes:$('#pf-notes').value.trim(),pil:true,step:st?'':(($('#pf-step').value||'En cours')==='En cours'?'':$('#pf-step').value)};
   S.pForm=null;$('#pl-form').hidden=true;
   if(t){guard(store.patch(t.id,p));toast('Action modifiée')}
   else{guard(store.add(Object.assign({done:false,star:false,imp:'',remind:null,cat:'',subs:[],repeat:'',created:Date.now()},p)));toast('Action ajoutée à Pilotage')}
@@ -2999,7 +3010,7 @@ $('#pl-form').addEventListener('submit',function(e){
 $('#open-pilot').addEventListener('click',function(){setView(S.tab==='pilotage'?'taches':'pilotage',true)});
 
 /* ---------- démarrage ---------- */
-var APP_VER='v37';
+var APP_VER='v38';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
