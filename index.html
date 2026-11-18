@@ -835,8 +835,8 @@ details.pl-note[open]>summary>span{display:none}
       <div id="c-meets" hidden>
         <form class="card editor" id="mtform" autocomplete="off">
           <h2 class="h2" id="mt-h">Compte rendu de réunion</h2>
-          <label class="fld" id="mt-calwrap" hidden>Réunion de ton calendrier<select id="mt-cal"></select></label>
-          <label class="fld">Titre<input id="mt-title" maxlength="120" placeholder="Ex. : Point MFA avec les académies"></label>
+          <label class="fld" id="mt-calwrap" hidden>Réunion de ton calendrier (à venir, passées, 7 derniers jours)<select id="mt-cal"></select></label><datalist id="mt-titles"></datalist>
+          <label class="fld">Titre<input id="mt-title" list="mt-titles" maxlength="120" placeholder="Ex. : Point MFA avec les académies"></label>
           <div class="when">
             <label class="fld">Date<input type="date" id="mt-date"></label>
             <label class="fld">Format<select id="mt-fmt"><option value="complet">Compte rendu complet</option><option value="court">Synthèse courte</option><option value="mail">Mail de synthèse</option></select></label>
@@ -3216,7 +3216,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v47';
+var APP_VER='v48';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
@@ -3259,8 +3259,16 @@ function evRow(e,now){
   return '<div class="evt'+(past?' past':'')+(live?' now':'')+'">'+t+'<div class="evt-m"><span class="evt-n">'+esc(e.t)+'</span>'+(sub?'<span class="meta">'+sub+'</span>':'')+(e.all?'':crBtn(e))+'</div>'+
     (e.v?'<a class="evt-join" href="'+esc(e.v)+'" target="_blank" rel="noopener noreferrer">Rejoindre</a>':'')+'</div>';
 }
+function calRemember(){
+  var all=calAll().filter(function(e){return !e.all});if(!all.length)return;
+  var lim=Date.now()-30*86400000,h=ls.get('calhist',[]).filter(function(x){return x.e>lim}),seen={};
+  h.forEach(function(x){seen[x.s+'|'+x.t]=1});var ch=false;
+  all.forEach(function(e){var k=e.s.getTime()+'|'+e.t;if(!seen[k]){seen[k]=1;h.push({t:e.t,s:e.s.getTime(),e:e.e.getTime(),c:e.c});ch=true}});
+  if(ch||h.length!==ls.get('calhist',[]).length)ls.set('calhist',h.slice(-400));
+}
 function renderAgenda(){
   var box=$('#agenda');if(!box)return;
+  calRemember();
   var d=calDoc();
   if(!d||S.catF==='perso'||S.gq||S.weekView){box.innerHTML='';return}
   var hid=calHide(),ev=calAll().filter(function(e){return hid.indexOf(e.c)<0});
@@ -3501,12 +3509,21 @@ function mtFill(m){
   $('#mt-h').textContent=m?'Réunion : '+(m.title||''):'Compte rendu de réunion';
 }
 function mtCalOpts(){
-  var hid=calHide(),n=new Date(),t0=new Date(n.getFullYear(),n.getMonth(),n.getDate()).getTime(),t2=t0+2*86400000;
-  MT.cal=calAll().filter(function(e){return !e.all&&hid.indexOf(e.c)<0&&e.s.getTime()<t2&&e.e.getTime()>t0}).slice(0,20);
+  calRemember();
+  var hid=calHide(),n=new Date(),t0=new Date(n.getFullYear(),n.getMonth(),n.getDate()).getTime(),t2=t0+2*86400000,tp=t0-7*86400000,seen={},list=[];
+  var add=function(e){var k=e.s.getTime()+'|'+e.t;if(seen[k]||hid.indexOf(e.c||'')>=0)return;seen[k]=1;list.push(e)};
+  calAll().filter(function(e){return !e.all&&e.s.getTime()<t2&&e.e.getTime()>tp}).forEach(add);
+  ls.get('calhist',[]).forEach(function(x){if(x.s>=tp&&x.s<t2)add({t:x.t,s:new Date(x.s),e:new Date(x.e),c:x.c||''})});
+  var up=list.filter(function(e){return e.s.getTime()>=t0}).sort(function(a,b){return a.s-b.s}),past=list.filter(function(e){return e.s.getTime()<t0}).sort(function(a,b){return b.s-a.s});
+  MT.cal=up.concat(past).slice(0,40);
   var w=$('#mt-calwrap');w.hidden=!MT.cal.length;
+  var dn=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
   $('#mt-cal').innerHTML='<option value="">Choisir (facultatif)</option>'+MT.cal.map(function(e,i){
-    var d=e.s.getTime()>=t0+86400000?'demain ':'';return '<option value="'+i+'">'+d+hm(e.s)+' · '+esc(e.t)+'</option>';
+    var s0=e.s.getTime(),d=s0>=t0+86400000?'demain ':(s0>=t0?'':(s0>=t0-86400000?'hier ':dn[e.s.getDay()]+' '+('0'+e.s.getDate()).slice(-2)+'/'+('0'+(e.s.getMonth()+1)).slice(-2)+' '));
+    return '<option value="'+i+'">'+d+hm(e.s)+' · '+esc(e.t)+'</option>';
   }).join('');
+  var tt={};meets().forEach(function(m){if(m.title)tt[m.title]=1});ls.get('calhist',[]).forEach(function(x){if(x.t)tt[x.t]=1});MT.cal.forEach(function(e){tt[e.t]=1});
+  $('#mt-titles').innerHTML=Object.keys(tt).slice(0,80).map(function(t){return '<option value="'+esc(t)+'">'}).join('');
 }
 function renderMtProv(){
   var p=curProv();
