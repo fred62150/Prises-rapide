@@ -525,6 +525,13 @@ details.pl-note[open]>summary>span{display:none}
 .pl-ck{flex:none;width:28px;height:28px;border-radius:8px;border:2px solid var(--muted);background:transparent;padding:0;cursor:pointer}.pl-ck[aria-pressed=true]{background:var(--accent);border-color:var(--accent)}
 .pl-cx{flex:none;width:40px;height:40px;border:0;background:none;color:var(--muted);font-size:20px;cursor:pointer}
 .pl-addsub{display:flex;gap:6px;margin-top:4px}.pl-addsub input{flex:1;min-width:0}
+/* ---- v46 : Tâches et Messages séparés aussi sur grand écran ---- */
+@media (min-width:900px){
+  .panels[data-view="taches"] #p-relecture{display:none}
+  .panels[data-view="relecture"] #p-taches{display:none}
+  .panels[data-view="taches"]{grid-template-columns:minmax(0,820px)}
+  .panels[data-view="relecture"]{grid-template-columns:minmax(0,1000px)}
+}
 </style>
 </head>
 <body>
@@ -3190,7 +3197,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v45';
+var APP_VER='v46';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
