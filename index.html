@@ -532,6 +532,23 @@ details.pl-note[open]>summary>span{display:none}
   .panels[data-view="taches"]{grid-template-columns:minmax(0,820px)}
   .panels[data-view="relecture"]{grid-template-columns:minmax(0,1000px)}
 }
+/* ---- v47 : Pilotage compact ---- */
+[data-back]{display:none!important}
+.pl-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.pl-top .seg{margin:0}
+.pl-top .mini{min-height:40px;padding:0 14px}
+.pl-tiles{gap:6px;margin-bottom:8px}
+.pl-t{display:flex;align-items:baseline;justify-content:center;gap:6px;padding:6px 6px;border-radius:10px;text-align:left}
+.pl-t b{display:inline;font-size:19px}
+.pl-t span{font-size:12px;line-height:1.1}
+.pl-filt{margin-bottom:10px}
+.pl-filt>summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:18px;font-size:13px;font-weight:600;color:var(--muted)}
+.pl-filt>summary::-webkit-details-marker{display:none}
+.pl-filt>summary::after{content:'▾';font-size:11px;margin-left:4px}
+.pl-filt[open]>summary::after{content:'▴'}
+.pl-filt.on>summary{color:var(--accent);border-color:var(--accent)}
+.pl-filt .chips{margin:8px 0 0}
+.pl-c .actions{gap:6px}.pl-c .actions .mini{padding:0 9px;font-size:13.5px}
 </style>
 </head>
 <body>
@@ -757,8 +774,7 @@ details.pl-note[open]>summary>span{display:none}
       <div id="pj-body"></div>
     </section>
     <section class="panel" id="p-pilotage" aria-label="Pilotage">
-      <button type="button" class="back" data-back>‹ Retour aux tâches</button>
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button type="button" class="mini primary" id="pl-new">+ Nouvelle action</button></div>
+      <div class="pl-top"><div class="seg" id="pl-seg" role="group" aria-label="Affichage de Pilotage"><button type="button" data-pv="list" aria-pressed="true">Liste</button><button type="button" data-pv="board" aria-pressed="false">Tableau</button></div><button type="button" class="mini primary" id="pl-new">+ Action</button></div>
       <form class="card" id="pl-form" hidden autocomplete="off" style="padding:12px;margin-bottom:12px">
         <strong id="pl-ft" style="display:block;margin-bottom:8px">Nouvelle action</strong>
         <label class="fld">Action<input id="pf-text" maxlength="200" placeholder="Ce qui est demandé"></label>
@@ -771,11 +787,12 @@ details.pl-note[open]>summary>span{display:none}
         <p class="note err" id="pf-err" hidden style="margin:8px 0 0"></p>
         <div class="actions" style="margin-top:10px"><button type="submit" class="mini primary">Enregistrer</button><button type="button" class="mini" id="pf-cancel">Annuler</button><button type="button" class="mini" id="pf-back" hidden>Renvoyer aux tâches</button></div>
       </form>
-      <div class="seg" id="pl-seg" role="group" aria-label="Affichage de Pilotage" style="margin-bottom:12px"><button type="button" data-pv="list" aria-pressed="true">Liste</button><button type="button" data-pv="board" aria-pressed="false">Tableau</button></div>
       <div class="pl-tiles" id="pl-tiles"></div>
-      <div class="chips" id="pl-chips" role="group" aria-label="Demandeur" style="margin:0 0 8px"></div>
-      <div class="chips" id="pl-prj" role="group" aria-label="Projet" style="margin:0 0 8px"></div>
-      <div class="chips" id="pl-imps" role="group" aria-label="Importance" style="margin:0 0 12px"></div>
+      <details class="pl-filt" id="pl-filt"><summary>Filtres<b id="pl-fn"></b></summary>
+        <div class="chips" id="pl-chips" role="group" aria-label="Demandeur"></div>
+        <div class="chips" id="pl-prj" role="group" aria-label="Projet"></div>
+        <div class="chips" id="pl-imps" role="group" aria-label="Importance"></div>
+      </details>
       <form class="card" id="pl-sheet" hidden autocomplete="off" style="padding:12px;margin-bottom:12px">
         <strong id="pl-st" style="display:block;margin-bottom:8px;overflow-wrap:anywhere">Suspendre</strong>
         <div class="when">
@@ -2933,7 +2950,7 @@ function plSheetOpen(id,mode){
   $('#pl-err').hidden=true;$('#pl-sheet').hidden=false;
   try{$('#pl-sheet').scrollIntoView({block:'nearest'})}catch(e){}
 }
-S.pOpenChk={};
+S.pOpenChk={};S.pMore={};
 function plChkHtml(t){
   var a=t.subs||[],n=a.length,d=a.filter(function(x){return x.done}).length,open=S.pOpenChk[t.id],id=esc(t.id);
   if(!n&&!open)return '';
@@ -2954,15 +2971,15 @@ function plCard(t){
   if(t.proj)meta.push('Projet : '+esc(t.proj));
   if(t.st==='susp'&&t.by)meta.push('Suspendue par : '+esc(t.by));
   if(t.st==='wait'&&t.by)meta.push('En attente de : '+esc(t.by));
-  var b='';
-  if(t.st)b+='<button type="button" class="mini" data-pa="back" data-id="'+esc(t.id)+'">Reprendre</button>';
-  else b+='<button type="button" class="mini" data-pa="susp" data-id="'+esc(t.id)+'">Suspendre</button><button type="button" class="mini" data-pa="wait" data-id="'+esc(t.id)+'">En attente</button>';
-  if(!(t.subs&&t.subs.length))b+='<button type="button" class="mini" data-pa="chk" data-id="'+esc(t.id)+'">Liste de contrôle</button>';
-  b+='<button type="button" class="mini" data-pa="note" data-id="'+esc(t.id)+'">'+(t.notes?'Modifier la note':'Ajouter une note')+'</button>';
-  b+='<button type="button" class="mini" data-pa="done" data-id="'+esc(t.id)+'">Terminer</button><button type="button" class="mini" data-pa="edit" data-id="'+esc(t.id)+'">Modifier</button>';
-  var ci=impOf(t),tag=impTag(t);
-  if(!t.st&&plSteps().length>1)b+='<button type="button" class="mini" data-pa="step" data-id="'+esc(t.id)+'">Étape : '+esc(stepOf(t))+'</button>';
-  b+='<button type="button" class="mini" data-pa="imp" data-id="'+esc(t.id)+'">Importance : '+esc(ci?IMP_LBL[ci]:'Normale')+'</button>';
+  var id=esc(t.id),btn=function(a,l){return '<button type="button" class="mini" data-pa="'+a+'" data-id="'+id+'">'+l+'</button>'};
+  var ci=impOf(t),tag=impTag(t),more=!!S.pMore[t.id];
+  var b=btn('done','Terminer')+(t.st?btn('back','Reprendre'):btn('susp','Suspendre')+btn('wait','En attente'));
+  if(!t.st&&plSteps().length>1)b+=btn('step','Étape : '+esc(stepOf(t)));
+  b+='<button type="button" class="mini" data-pa="more" data-id="'+id+'" aria-expanded="'+more+'">'+(more?'Moins':'Plus')+'</button>';
+  if(more){
+    if(!(t.subs&&t.subs.length))b+=btn('chk','Liste de contrôle');
+    b+=btn('note',t.notes?'Modifier la note':'Ajouter une note')+btn('edit','Modifier')+btn('imp','Importance : '+esc(ci?IMP_LBL[ci]:'Normale'));
+  }
   return '<div class="pl-c'+(late?' late':'')+(t.st==='susp'?' susp':'')+(soon?' soon':'')+(ci==='urgent'?' imp-urgent':'')+'" data-card="'+esc(t.id)+'"><div class="pl-h"><strong>'+esc(t.text)+'</strong>'+(right?'<em class="'+(late?'late':'')+'">'+esc(right)+'</em>':'')+'</div>'+
     '<div class="pl-m">'+tag+(meta.length?meta.join(' · '):'Aucun demandeur renseigné')+'</div>'+plNoteHtml(t.notes)+plChkHtml(t)+'<div class="actions" style="margin:0">'+b+'</div></div>';
 }
@@ -2983,6 +3000,7 @@ function renderPilot(){
   var pj=[];open.forEach(function(t){if(t.proj&&pj.indexOf(t.proj)<0)pj.push(t.proj)});pj.sort(function(a,b){return a.localeCompare(b,'fr')});
   if(S.pPrj&&pj.indexOf(S.pPrj)<0)S.pPrj='';
   $('#pl-prj').innerHTML=pj.length?[''].concat(pj).map(function(r){return '<button type="button" class="chip" data-pp="'+esc(r)+'" aria-pressed="'+(S.pPrj===r)+'">'+(r?'Projet : '+esc(r):'Tous les projets')+'</button>'}).join(''):'';
+  var nf=(S.pReq?1:0)+(S.pImp?1:0)+(S.pPrj?1:0);$('#pl-fn').textContent=nf?' · '+nf+' actif'+(nf>1?'s':''):'';$('#pl-filt').classList.toggle('on',nf>0);
   renderPls();
   var f=function(t){return (!S.pReq||t.req===S.pReq)&&(!S.pImp||impOf(t)===S.pImp)&&(!S.pPrj||t.proj===S.pPrj)};
   var cmpR=function(a,b){return (a.resume||'9')<(b.resume||'9')?-1:1};
@@ -3015,6 +3033,7 @@ $('#p-pilotage').addEventListener('click',function(e){
   else if(a==='done')toggleTask(t,id);
   else if(a==='edit')plFormOpen(id);
   else if(a==='note')plNoteOpen(id);
+  else if(a==='more'){S.pMore[id]=!S.pMore[id];renderPilot()}
   else if(a==='chk'){S.pOpenChk[id]=true;renderPilot()}
   else if(a==='sub'){var si=+b.dataset.si,ns=(t.subs||[]).map(function(x){return {t:x.t,done:!!x.done}});if(ns[si]){ns[si].done=!ns[si].done;S.pOpenChk[id]=true;guard(store.patch(id,{subs:ns}))}}
   else if(a==='subdel'){var sj=+b.dataset.si;S.pOpenChk[id]=true;guard(store.patch(id,{subs:(t.subs||[]).filter(function(x,i){return i!==sj})}))}
@@ -3197,7 +3216,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v46';
+var APP_VER='v47';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
