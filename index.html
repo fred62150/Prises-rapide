@@ -488,6 +488,18 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
   .tabbar .tab{width:68px;min-height:54px;font-size:11px;font-weight:600;gap:3px}
   .tabbar .badge{right:6px}
 }
+/* ---- v37 : Pilotage en tableau ---- */
+.pl-board{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;margin-right:-14px;padding-right:14px;-webkit-overflow-scrolling:touch}
+.pl-col{flex:0 0 min(84%,300px);scroll-snap-align:start;display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid var(--line);border-radius:16px;background:var(--surface);align-self:flex-start}
+.pl-col .pl-c{margin-bottom:0}
+.pl-ch{margin:2px 4px;display:flex;align-items:center;gap:8px;font:600 13px/1.2 var(--font-body);color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.pl-ch em{font-style:normal;font-variant-numeric:tabular-nums;background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:1px 8px}
+.pl-ce{margin:4px;font-size:13.5px;color:var(--muted)}
+@media (min-width:900px){
+  .panels[data-view="pilotage"][data-pv="board"]{grid-template-columns:minmax(0,1100px)}
+  .pl-board{overflow-x:visible;margin-right:0;padding-right:0}
+  .pl-col{flex:1 1 0;min-width:0}
+}
 </style>
 </head>
 <body>
@@ -721,6 +733,7 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
         <p class="note err" id="pf-err" hidden style="margin:8px 0 0"></p>
         <div class="actions" style="margin-top:10px"><button type="submit" class="mini primary">Enregistrer</button><button type="button" class="mini" id="pf-cancel">Annuler</button><button type="button" class="mini" id="pf-back" hidden>Renvoyer aux tâches</button></div>
       </form>
+      <div class="seg" id="pl-seg" role="group" aria-label="Affichage de Pilotage" style="margin-bottom:12px"><button type="button" data-pv="list" aria-pressed="true">Liste</button><button type="button" data-pv="board" aria-pressed="false">Tableau</button></div>
       <div class="pl-tiles" id="pl-tiles"></div>
       <div class="chips" id="pl-chips" role="group" aria-label="Demandeur" style="margin:0 0 8px"></div>
       <div class="chips" id="pl-imps" role="group" aria-label="Importance" style="margin:0 0 12px"></div>
@@ -2875,6 +2888,7 @@ function plCard(t){
   return '<div class="pl-c'+(late?' late':'')+(t.st==='susp'?' susp':'')+(soon?' soon':'')+(ci==='urgent'?' imp-urgent':'')+'"><div class="pl-h"><strong>'+esc(t.text)+'</strong>'+(right?'<em class="'+(late?'late':'')+'">'+esc(right)+'</em>':'')+'</div>'+
     '<div class="pl-m">'+tag+(meta.length?meta.join(' · '):'Aucun demandeur renseigné')+'</div><div class="actions" style="margin:0">'+b+'</div></div>';
 }
+S.pView=ls.get('plview','list')==='board'?'board':'list';
 function renderPilot(){
   var tiles=$('#pl-tiles');if(!tiles)return;
   var open=S.tasks.filter(function(t){return !t.done&&t.pil}),td=ymd(new Date());
@@ -2890,11 +2904,22 @@ function renderPilot(){
   $('#pl-imps').innerHTML=[['','Toutes importances'],['urgent','Urgent'],['important','Important']].map(function(o){return '<button type="button" class="chip" data-pi="'+o[0]+'" aria-pressed="'+(S.pImp===o[0])+'">'+o[1]+'</button>'}).join('');
   renderPls();
   var f=function(t){return (!S.pReq||t.req===S.pReq)&&(!S.pImp||impOf(t)===S.pImp)};
+  var cmpR=function(a,b){return (a.resume||'9')<(b.resume||'9')?-1:1};
+  var rF=run.filter(f).sort(cmp),sF=susp.filter(f).sort(cmpR),wF=wait.filter(f).sort(cmpR);
+  var empty='<div class="card empty"><strong>Rien à piloter</strong>Ajoutez une action avec « + Nouvelle action », ou envoyez une tâche vers Pilotage depuis ses options.</div>';
+  $('#panels').dataset.pv=S.pView;
+  document.querySelectorAll('#pl-seg [data-pv]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.pv===S.pView))});
+  if(S.pView==='board'){
+    var col=function(title,items){return '<section class="pl-col" aria-label="'+title+'"><h3 class="pl-ch">'+title+'<em>'+items.length+'</em></h3>'+(items.length?items.map(plCard).join(''):'<p class="pl-ce">Aucune action</p>')+'</section>'};
+    $('#pl-list').innerHTML=open.length?'<div class="pl-board">'+col('En cours',rF)+col('En attente',wF)+col('Suspendues',sF)+'</div>':empty;
+    return;
+  }
   var sec=function(title,items){return items.length?'<div class="pl-sec">'+title+' ('+items.length+')</div>'+items.map(plCard).join(''):''};
-  var h=sec('En cours',run.filter(f).sort(cmp))+sec('Suspendues',susp.filter(f).sort(function(a,b){return (a.resume||'9')<(b.resume||'9')?-1:1}))+sec('En attente',wait.filter(f).sort(function(a,b){return (a.resume||'9')<(b.resume||'9')?-1:1}));
-  $('#pl-list').innerHTML=h||'<div class="card empty"><strong>Rien à piloter</strong>Ajoutez une action avec « + Nouvelle action », ou envoyez une tâche vers Pilotage depuis ses options.</div>';
+  var h=sec('En cours',rF)+sec('Suspendues',sF)+sec('En attente',wF);
+  $('#pl-list').innerHTML=h||empty;
 }
 $('#p-pilotage').addEventListener('click',function(e){
+  var pv=e.target.closest('[data-pv]');if(pv){S.pView=pv.dataset.pv==='board'?'board':'list';ls.set('plview',S.pView);renderPilot();return}
   var c=e.target.closest('[data-pr]');if(c){S.pReq=c.dataset.pr;renderPilot();return}
   var ci=e.target.closest('[data-pi]');if(ci){S.pImp=ci.dataset.pi;renderPilot();return}
   if(e.target.closest('#pl-cancel')){S.pSheet=null;$('#pl-sheet').hidden=true;return}
@@ -2974,7 +2999,7 @@ $('#pl-form').addEventListener('submit',function(e){
 $('#open-pilot').addEventListener('click',function(){setView(S.tab==='pilotage'?'taches':'pilotage',true)});
 
 /* ---------- démarrage ---------- */
-var APP_VER='v36';
+var APP_VER='v37';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
