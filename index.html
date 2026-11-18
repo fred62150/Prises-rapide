@@ -509,6 +509,12 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
 #pj-form{margin-bottom:12px}
 .pl-n{font-size:13.5px;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;margin:2px 0 8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .pj-done{margin-top:14px}.pj-done summary{cursor:pointer;color:var(--muted);font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;padding:8px 2px}
+.pl-note{display:block;margin:2px 0 8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--accent-soft);font-size:13.5px;line-height:1.4}
+.pl-note>b,.pl-note>summary>b{display:inline-block;margin-right:8px;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+.pl-note>summary{cursor:pointer;list-style:none;overflow-wrap:anywhere}.pl-note>summary::-webkit-details-marker{display:none}
+.pl-note>span,.pl-note>summary>span{color:var(--fg);overflow-wrap:anywhere}
+.pl-nt{margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--fg)}
+details.pl-note[open]>summary>span{display:none}
 </style>
 </head>
 <body>
@@ -762,6 +768,7 @@ body{padding-block:max(16px,env(safe-area-inset-top,0px)) 28px;padding-left:calc
         <p class="note err" id="pl-err" hidden style="margin:8px 0 0"></p>
         <div class="actions" style="margin-top:10px"><button type="submit" class="mini primary">Valider</button><button type="button" class="mini" id="pl-cancel">Annuler</button></div>
       </form>
+      <form class="card" id="pl-nsheet" hidden autocomplete="off" style="padding:12px;margin-bottom:12px"><strong id="pn-t" style="display:block;margin-bottom:8px;overflow-wrap:anywhere">Note</strong><textarea class="edit" id="pn-text" rows="4" maxlength="2000" aria-label="Note" placeholder="Détails, lien, contact…"></textarea><div class="actions" style="margin-top:10px"><button type="submit" class="mini primary">Enregistrer</button><button type="button" class="mini" id="pn-cancel">Annuler</button></div></form>
       <div id="pl-list"></div>
       <datalist id="pl-dl"></datalist><datalist id="pl-reqs"></datalist>
     </section>
@@ -2884,7 +2891,16 @@ $('#pls-save').addEventListener('click',function(){
   plSaveLists($('#pls-req').value.split('\n'),$('#pls-own').value.split('\n'),$('#pls-steps').value.split('\n'));
   $('#pls-req').blur();$('#pls-own').blur();$('#pls-steps').blur();toast('Listes enregistrées');setTimeout(renderPls,50);
 });
+S.pNote=null;
+function plNoteOpen(id){
+  var t=S.tasks.find(function(x){return x.id===id});if(!t)return;
+  S.pNote=id;S.pSheet=null;S.pForm=null;$('#pl-sheet').hidden=true;$('#pl-form').hidden=true;
+  $('#pn-t').textContent='Note : '+t.text;$('#pn-text').value=t.notes||'';$('#pl-nsheet').hidden=false;
+  try{$('#pl-nsheet').scrollIntoView({block:'nearest'})}catch(e){}
+  $('#pn-text').focus();
+}
 function plSheetOpen(id,mode){
+  S.pNote=null;$('#pl-nsheet').hidden=true;
   var t=S.tasks.find(function(x){return x.id===id});if(!t)return;
   S.pSheet={id:id,mode:mode};S.pForm=null;$('#pl-form').hidden=true;
   $('#pl-st').textContent=(mode==='susp'?'Suspendre : ':'Mettre en attente : ')+t.text;
@@ -2898,6 +2914,11 @@ function plSheetOpen(id,mode){
   $('#pl-err').hidden=true;$('#pl-sheet').hidden=false;
   try{$('#pl-sheet').scrollIntoView({block:'nearest'})}catch(e){}
 }
+function plNoteHtml(n){
+  n=String(n||'').trim();if(!n)return '';
+  if(n.length<=90&&n.indexOf('\n')<0)return '<div class="pl-note"><b>Note</b><span>'+esc(n)+'</span></div>';
+  return '<details class="pl-note"><summary><b>Note</b><span>'+esc(n.split('\n')[0].slice(0,80))+'…</span></summary><div class="pl-nt">'+esc(n)+'</div></details>';
+}
 function plCard(t){
   var td=ymd(new Date()),late=!t.st&&groupOf(t)==='late',soon=!!t.st&&!!t.resume&&t.resume<=td;
   var right=t.st?(t.resume?(t.st==='susp'?'Reprise ':'Relance ')+whenLabel({due:t.resume}):''):(t.due?whenLabel(t):'');
@@ -2910,12 +2931,13 @@ function plCard(t){
   var b='';
   if(t.st)b+='<button type="button" class="mini" data-pa="back" data-id="'+esc(t.id)+'">Reprendre</button>';
   else b+='<button type="button" class="mini" data-pa="susp" data-id="'+esc(t.id)+'">Suspendre</button><button type="button" class="mini" data-pa="wait" data-id="'+esc(t.id)+'">En attente</button>';
+  b+='<button type="button" class="mini" data-pa="note" data-id="'+esc(t.id)+'">'+(t.notes?'Modifier la note':'Ajouter une note')+'</button>';
   b+='<button type="button" class="mini" data-pa="done" data-id="'+esc(t.id)+'">Terminer</button><button type="button" class="mini" data-pa="edit" data-id="'+esc(t.id)+'">Modifier</button>';
   var ci=impOf(t),tag=impTag(t);
   if(!t.st&&plSteps().length>1)b+='<button type="button" class="mini" data-pa="step" data-id="'+esc(t.id)+'">Étape : '+esc(stepOf(t))+'</button>';
   b+='<button type="button" class="mini" data-pa="imp" data-id="'+esc(t.id)+'">Importance : '+esc(ci?IMP_LBL[ci]:'Normale')+'</button>';
   return '<div class="pl-c'+(late?' late':'')+(t.st==='susp'?' susp':'')+(soon?' soon':'')+(ci==='urgent'?' imp-urgent':'')+'"><div class="pl-h"><strong>'+esc(t.text)+'</strong>'+(right?'<em class="'+(late?'late':'')+'">'+esc(right)+'</em>':'')+'</div>'+
-    '<div class="pl-m">'+tag+(meta.length?meta.join(' · '):'Aucun demandeur renseigné')+'</div>'+(t.notes?'<div class="pl-n">'+esc(t.notes)+'</div>':'')+'<div class="actions" style="margin:0">'+b+'</div></div>';
+    '<div class="pl-m">'+tag+(meta.length?meta.join(' · '):'Aucun demandeur renseigné')+'</div>'+plNoteHtml(t.notes)+'<div class="actions" style="margin:0">'+b+'</div></div>';
 }
 S.pView=ls.get('plview','list')==='board'?'board':'list';
 function renderPilot(){
@@ -2956,6 +2978,7 @@ $('#p-pilotage').addEventListener('click',function(e){
   var pp=e.target.closest('[data-pp]');if(pp){S.pPrj=pp.dataset.pp;renderPilot();return}
   var c=e.target.closest('[data-pr]');if(c){S.pReq=c.dataset.pr;renderPilot();return}
   var ci=e.target.closest('[data-pi]');if(ci){S.pImp=ci.dataset.pi;renderPilot();return}
+  if(e.target.closest('#pn-cancel')){S.pNote=null;$('#pl-nsheet').hidden=true;return}
   if(e.target.closest('#pl-cancel')){S.pSheet=null;$('#pl-sheet').hidden=true;return}
   var b=e.target.closest('[data-pa]');if(!b)return;
   var id=b.dataset.id,a=b.dataset.pa,t=S.tasks.find(function(x){return x.id===id});if(!t)return;
@@ -2963,6 +2986,7 @@ $('#p-pilotage').addEventListener('click',function(e){
   else if(a==='back'){guard(store.patch(id,{st:'',by:'',resume:''}));toast('Reprise : '+t.text)}
   else if(a==='done')toggleTask(t,id);
   else if(a==='edit')plFormOpen(id);
+  else if(a==='note')plNoteOpen(id);
   else if(a==='step'){var ss=plSteps(),nx=ss[(ss.indexOf(stepOf(t))+1)%ss.length];guard(store.patch(id,{step:nx==='En cours'?'':nx}));toast('Étape : '+nx)}
   else if(a==='imp'){guard(store.patch(id,{imp:IMP_NEXT[impOf(t)||'']}))}
 });
@@ -2975,6 +2999,12 @@ $('#pl-sheet').addEventListener('submit',function(e){
   S.pSheet=null;$('#pl-sheet').hidden=true;
   guard(store.patch(sh.id,{st:sh.mode,by:by,resume:dt}));
   if(t)toast((sh.mode==='susp'?'Suspendue : ':'En attente : ')+t.text);
+});
+$('#pl-nsheet').addEventListener('submit',function(e){
+  e.preventDefault();var id=S.pNote;if(!id)return;
+  var t=S.tasks.find(function(x){return x.id===id}),v=$('#pn-text').value.trim();
+  S.pNote=null;$('#pl-nsheet').hidden=true;
+  guard(store.patch(id,{notes:v}));toast(v?'Note enregistrée':'Note supprimée');
 });
 $('#pl-by').addEventListener('input',function(){$('#pl-err').hidden=true});
 S.pForm=null;
@@ -2989,7 +3019,7 @@ function plFormSync(){
 }
 function plFormOpen(id){
   var t=id?S.tasks.find(function(x){return x.id===id}):null;if(id&&!t)return;
-  S.pForm={id:id||null};S.pSheet=null;$('#pl-sheet').hidden=true;
+  S.pForm={id:id||null};S.pSheet=null;$('#pl-sheet').hidden=true;S.pNote=null;$('#pl-nsheet').hidden=true;
   $('#pl-ft').textContent=t?'Modifier l’action':'Nouvelle action';
   $('#pf-text').value=t?t.text:'';
   var L=plLists();plFillSel('pf-req',L.req,t&&t.req||'');plFillSel('pf-own',L.own,t&&t.owner||'');
@@ -3056,7 +3086,7 @@ function renderProjets(){
   top.innerHTML='<button type="button" class="back" data-pjback>‹ Projets</button><h2 class="h2" style="margin:4px 0 10px;overflow-wrap:anywhere">'+esc(n)+'</h2><div class="actions" style="padding:0;margin-bottom:12px"><button type="button" class="mini primary" data-pja="newpil">+ Action de pilotage</button><button type="button" class="mini" data-pja="ren">Renommer</button><button type="button" class="mini" data-pja="del">'+(S.pjDel?'Confirmer : retirer le projet':'Supprimer le projet')+'</button></div>'+(S.pjDel?'<p class="note" style="margin:0 0 10px">Les tâches et actions restent, elles n’ont simplement plus de projet.</p>':'');
   var dn=S.tasks.filter(function(t){return t.done&&t.proj===n}).reverse().slice(0,10);
   var drow=function(t){return '<div class="tb-i" data-id="'+esc(t.id)+'"><button type="button" class="ck" data-tb="done" aria-label="Rouvrir : '+esc(t.text)+'"></button><div class="b"><strong style="text-decoration:line-through;opacity:.7">'+esc(t.text)+'</strong></div></div>'};
-  var row=function(t){return (t.st?tbWatch(t):tbItem(t))+(t.notes?'<div class="pl-n" style="margin:-4px 4px 10px 44px">'+esc(t.notes)+'</div>':'')};
+  var row=function(t){return (t.st?tbWatch(t):tbItem(t))+(t.notes?'<div style="margin:-4px 4px 10px 44px">'+plNoteHtml(t.notes)+'</div>':'')};
   var sec=function(title,a){return a.length?'<div class="tb-sec">'+title+'<em>'+a.length+'</em></div>'+a.map(row).join(''):''};
   var dh=dn.length?'<details class="pj-done"><summary>Terminées ('+dn.length+')</summary>'+dn.map(drow).join('')+'</details>':'';
   body.innerHTML=((sec('Pilotage',pil)+sec('Tâches',tk))||(dn.length?'':'<div class="card empty"><strong>Rien dans ce projet</strong>Choisis ce projet dans la fiche d’une tâche ou d’une action de Pilotage.</div>'))+dh;
@@ -3098,7 +3128,7 @@ $('#p-projets').addEventListener('click',function(e){
 $('#tab-projets').addEventListener('click',function(){S.pjOpen='';S.pjDel=false;renderProjets()});
 
 /* ---------- démarrage ---------- */
-var APP_VER='v41';
+var APP_VER='v42';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
