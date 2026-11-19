@@ -3216,7 +3216,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v49';
+var APP_VER='v50';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
@@ -3465,6 +3465,9 @@ function mdHtml(src){
     if((m=l.match(/^\s*[-*•]\s+(.*)$/))){if(ol){out.push('</ol>');ol=false}if(!ul){out.push('<ul>');ul=true}out.push('<li>'+mdInline(m[1])+'</li>');continue}
     if((m=l.match(/^\s*\d+[.)]\s+(.*)$/))){if(ul){out.push('</ul>');ul=false}if(!ol){out.push('<ol>');ol=true}out.push('<li>'+mdInline(m[1])+'</li>');continue}
     if(/^[A-ZÉÈÀÂÊÎÔÛÇ0-9’' ,:()\/&-]{4,}:?$/.test(l.trim())&&/[A-ZÉÈÀ]{3}/.test(l)){close();out.push('<h3>'+l.trim().charAt(0)+l.trim().slice(1).toLowerCase()+'</h3>');continue}
+    var tl=l.trim(),nx='',j;for(j=i+1;j<L.length;j++){if(L[j].trim()){nx=L[j];break}}
+    var nxList=/^\s*([-*•]|\d+[.)])\s+/.test(nx),first=out.length===0;
+    if(tl.length<=70&&!/^[-*•]/.test(tl)&&((/:$/.test(tl)&&nx)||(!/[.;,!?:]$/.test(tl)&&(nxList||first&&nx)))){close();var tt=tl.replace(/\s*:$/,'');out.push(first?'<h2>'+mdInline(tt)+'</h2>':'<h3>'+mdInline(tt)+'</h3>');continue}
     close();out.push('<p>'+mdInline(l)+'</p>');
   }
   close();return out.join('');
