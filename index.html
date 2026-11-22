@@ -766,6 +766,7 @@ details.pl-note[open]>summary>span{display:none}
       <div class="tb-bar"><div class="seg" id="tb-src" role="group" aria-label="Afficher"><button type="button" data-ts="" aria-pressed="true">Tout</button><button type="button" data-ts="task" aria-pressed="false">Tâches</button><button type="button" data-ts="pil" aria-pressed="false">Pilotage</button></div><div class="tb-new"><button type="button" class="mini primary" id="tb-nt">+ Tâche</button><button type="button" class="mini primary" id="tb-np">+ Pilotage</button></div></div>
       <div class="tb-tiles" id="tb-tiles"></div>
       <div id="tb-ev"></div>
+      <div id="tb-cr"></div>
       <div id="tb-list"></div>
       <div id="tb-watch"></div>
     </section>
@@ -1027,7 +1028,7 @@ details.pl-note[open]>summary>span{display:none}
 .cr-chip .m{display:inline-flex;gap:4px;align-items:center;padding:3px 9px 3px 7px;border-radius:999px;border:1px solid var(--line-strong,var(--line));background:var(--surface)}
 .cr-chip .m b{font:700 12px/1 var(--font-display);min-width:18px;padding:2px 5px;border-radius:9px;background:var(--line);color:inherit;text-align:center;font-variant-numeric:tabular-nums}
 .cr-chip .m.zero{opacity:.55}.cr-chip.old{opacity:.5}
-#p-courrier{--c-vip:var(--ok,#17996A);--c-urgent:var(--danger,#C2382E);--c-echeance:var(--star,#C77700);--c-traiter:var(--accent,#2F5BEA);--c-sansrep:#7A4DD8}
+#p-courrier,#tb-cr{--c-vip:var(--ok,#17996A);--c-urgent:var(--danger,#C2382E);--c-echeance:var(--star,#C77700);--c-traiter:var(--accent,#2F5BEA);--c-sansrep:#7A4DD8}
 .cr-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .cr-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
 .cr-sub b{color:var(--fg,inherit);font-weight:600}
@@ -2923,9 +2924,20 @@ function crAgo(ms){var m=Math.max(0,Math.round((Date.now()-ms)/60000));return m<
 function crColor(nom){var h=0,i;for(i=0;i<nom.length;i++)h=(h*31+nom.charCodeAt(i))%360;return 'hsl('+h+' 48% 42%)'}
 function crInit(nom){var w=String(nom).replace(/[^\p{L}\s]/gu,'').trim().split(/\s+/);return ((w[0]||'?')[0]+(w.length>1?w[w.length-1][0]:'')).toUpperCase()}
 var CR_TITLE=document.title;
+function crHome(){
+  var box=$('#tb-cr');if(!box)return;
+  var D=ls.get('courrier',null),hid=ls.get('crhide',{}),ord={vip:0,urgent:1,echeance:2,traiter:3,sansrep:4};
+  if(!D||!D.items){box.innerHTML='';return}
+  var td=ymd(new Date()),dem=new Date();dem.setDate(dem.getDate()+1);dem=ymd(dem);
+  var its=D.items.filter(function(it){return !hid[it.id]&&(it.cat==='urgent'||it.cat==='vip'||(it.cat==='echeance'&&it.echeance&&it.echeance<=dem))});
+  its.sort(function(a,b){return ord[a.cat]-ord[b.cat]||b.date-a.date});
+  var tot=D.items.filter(function(it){return !hid[it.id]}).length;
+  if(!its.length){box.innerHTML='';return}
+  box.innerHTML='<div class="tb-sec">Courrier prioritaire<em>'+its.length+(tot>its.length?' sur '+tot:'')+' · <button type="button" data-cr="go" style="background:none;border:0;color:var(--accent);cursor:pointer;font:inherit">Tout voir</button></em></div><div style="margin-bottom:14px">'+its.slice(0,4).map(crRow).join('')+'</div>';
+}
 function crBadges(){
   var D=ls.get('courrier',null),chip=$('#cr-chip'),bd=$('#cr-badge');if(!chip||!bd)return;
-  if(!D||!D.items){chip.hidden=true;bd.hidden=true;document.title=CR_TITLE||'Prise rapide';try{if(navigator.clearAppBadge)navigator.clearAppBadge()}catch(e){}return}
+  if(!D||!D.items){crHome();chip.hidden=true;bd.hidden=true;document.title=CR_TITLE||'Prise rapide';try{if(navigator.clearAppBadge)navigator.clearAppBadge()}catch(e){}return}
   var hid=ls.get('crhide',{}),its=D.items.filter(function(it){return !hid[it.id]});
   var mail=its.filter(function(it){return it.src!=='mm'}),mm=its.filter(function(it){return it.src==='mm'});
   var urg=function(a){return a.some(function(it){return it.cat==='urgent'||it.cat==='vip'})};
@@ -2934,8 +2946,16 @@ function crBadges(){
   chip.hidden=false;chip.classList.toggle('old',Date.now()-(D.t||0)>30*60000);
   var prio=its.filter(function(it){return it.cat==='urgent'||it.cat==='vip'}).length;
   bd.hidden=!its.length;bd.textContent=its.length;bd.classList.toggle('u',prio>0);
+  crHome();
   document.title=(prio?'('+prio+') ':'')+(CR_TITLE||'Prise rapide');
   try{if(prio&&navigator.setAppBadge)navigator.setAppBadge(prio);else if(navigator.clearAppBadge)navigator.clearAppBadge()}catch(e){}
+}
+var CR_LAB={vip:'Surveillé',urgent:'Urgent',echeance:'Échéance',traiter:'À traiter',sansrep:'Sans réponse'};
+function crRow(it){
+  var lab=CR_LAB;
+    var ech=it.echeance?' · échéance '+esc(whenLabel({due:it.echeance})):'';
+    return '<div class="cr-i" data-cat="'+it.cat+'" data-id="'+esc(it.id)+'"><div class="cr-av" style="background:'+crColor(it.nom)+'">'+esc(crInit(it.nom))+'</div><div class="cr-b"><div class="cr-top"><span class="cr-tag">'+lab[it.cat]+'</span><span class="cr-src">'+(it.src==='mm'?'Mattermost':'Mail')+'</span><span>'+esc(it.nom)+' · '+esc(crAgo(it.date))+esc(ech)+'</span></div><strong class="cr-s">'+esc(it.sujet)+'</strong>'+(it.raison?'<div class="cr-r">'+esc(it.raison)+'</div>':'')+
+      '<div class="cr-acts"><button type="button" class="go" data-cr="open">Ouvrir</button><button type="button" data-cr="task">→ Tâche</button><button type="button" data-cr="pil">→ Pilotage</button><button type="button" data-cr="hide">Masquer</button></div></div></div>'
 }
 function renderCourrier(){
   crBadges();
@@ -2961,11 +2981,7 @@ function renderCourrier(){
   var list=base.filter(function(it){return (!CR.cat||it.cat===CR.cat)&&(!CR.day||(CR.day==='late'?(it.echeance&&it.echeance<td):it.echeance===CR.day))});
   var ord={vip:0,urgent:1,echeance:2,traiter:3,sansrep:4};
   list.sort(function(a,b){return ord[a.cat]-ord[b.cat]||b.date-a.date});
-  var lab={vip:'Surveillé',urgent:'Urgent',echeance:'Échéance',traiter:'À traiter',sansrep:'Sans réponse'};
-  var rows=list.map(function(it){
-    var ech=it.echeance?' · échéance '+esc(whenLabel({due:it.echeance})):'';
-    return '<div class="cr-i" data-cat="'+it.cat+'" data-id="'+esc(it.id)+'"><div class="cr-av" style="background:'+crColor(it.nom)+'">'+esc(crInit(it.nom))+'</div><div class="cr-b"><div class="cr-top"><span class="cr-tag">'+lab[it.cat]+'</span><span class="cr-src">'+(it.src==='mm'?'Mattermost':'Mail')+'</span><span>'+esc(it.nom)+' · '+esc(crAgo(it.date))+esc(ech)+'</span></div><strong class="cr-s">'+esc(it.sujet)+'</strong>'+(it.raison?'<div class="cr-r">'+esc(it.raison)+'</div>':'')+
-      '<div class="cr-acts"><button type="button" class="go" data-cr="open">Ouvrir</button><button type="button" data-cr="task">→ Tâche</button><button type="button" data-cr="pil">→ Pilotage</button><button type="button" data-cr="hide">Masquer</button></div></div></div>'}).join('');
+  var rows=list.map(crRow).join('');
   body.innerHTML='<div class="cr-tiles">'+tiles+'</div>'+(tot?bar:'')+
     '<div class="cr-sec">Échéances<em>7 prochains jours</em></div><div class="cr-frise">'+days.join('')+'</div>'+
     '<div class="cr-sec">À traiter<em>'+list.length+(CR.cat||CR.day?' · touche à nouveau le filtre pour l’enlever':'')+'</em></div>'+
@@ -2973,12 +2989,13 @@ function renderCourrier(){
 }
 function crItem(el){var D=crData();var id=el.closest('.cr-i').dataset.id;return D&&D.items.filter(function(x){return x.id===id})[0]}
 document.addEventListener('click',function(e){
-  var c=e.target.closest('#p-courrier');if(!c)return;
+  var c=e.target.closest('#p-courrier,#tb-cr');if(!c)return;
   var t=e.target.closest('[data-cc]');if(t){CR.cat=CR.cat===t.dataset.cc?'':t.dataset.cc;renderCourrier();return}
   t=e.target.closest('[data-cd]');if(t){CR.day=CR.day===t.dataset.cd?'':t.dataset.cd;renderCourrier();return}
   t=e.target.closest('[data-cs]');if(t){CR.src=t.dataset.cs;renderCourrier();return}
   t=e.target.closest('[data-cr]');if(!t)return;
   var a=t.dataset.cr;
+  if(a==='go'){setView('courrier',true);return}
   if(a==='demo'){CR.demo=true;renderCourrier();return}
   if(a==='nodemo'){CR.demo=false;renderCourrier();return}
   var it=crItem(t);if(!it)return;
@@ -3370,7 +3387,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v52';
+var APP_VER='v53';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
