@@ -2989,6 +2989,7 @@ function renderCourrier(){
   var all=D.items.filter(function(it){return !hid[it.id]}),td=ymd(new Date());
   $('#cr-sub').innerHTML='Mis à jour <b>'+esc(crAgo(D.t||0))+'</b>'+(CR.demo?'<span class="cr-demo">Exemple<\/span> <button type="button" class="cr-link" data-cr="nodemo" style="background:none;border:0;color:var(--accent);cursor:pointer;font:inherit">Quitter l’exemple</button>':'');
   if(D.mmStatus&&!CR.demo)$('#cr-sub').insertAdjacentHTML('beforeend','<div>'+esc(D.mmStatus)+'</div>');
+  if(!CR.demo&&!(parseFloat(D.v)>=0.7))$('#cr-sub').insertAdjacentHTML('beforeend','<div style="color:var(--star,#C77700)">Script Zimbra à mettre à jour (version 0.7) : l’ouverture des mails et les canaux Mattermost en dépendent.</div>');
   var base=all.filter(function(it){return !vs||it.src===vs});
   var cnt=function(c){return base.filter(function(it){return it.cat===c}).length};
   var tot=base.length;
@@ -3025,12 +3026,14 @@ document.addEventListener('click',function(e){
   if(a==='open'){
     var Dz=ls.get('courrier',null);
     if(it.url)window.open(it.url,'_blank','noopener');
-    else if(it.src!=='mm'&&Dz&&Dz.zbase){
+    else if(it.src!=='mm'){
+      var qz=(it.adresse?'from:'+it.adresse+' ':'')+'subject:"'+String(it.sujet||'').replace(/["()\\:]/g,' ').replace(/\s+/g,' ').trim().slice(0,80)+'"';
+      try{navigator.clipboard.writeText(qz).catch(function(){})}catch(e){}
       document.documentElement.dataset.prOpen=JSON.stringify({adresse:it.adresse||'',sujet:it.sujet||'',nom:it.nom||''});
       window.dispatchEvent(new Event('pr-open'));
-      window.open(Dz.zbase+'/','_blank');
-      toast('Ouverture dans Zimbra : recherche du mail…');
-    }else toast('Ouvre-le dans Zimbra : '+it.nom);
+      window.open(((Dz&&Dz.zbase)||'https://messagerie.education.gouv.fr')+'/','_blank');
+      toast('Zimbra s’ouvre et cherche le mail. Sinon, colle la recherche avec ⌘V.');
+    }else toast('Lien indisponible pour ce message');
   }
   else if(a==='hide'){gone()}
   else if(a==='task'){guard(store.add({text:txt,done:false,star:false,imp:imp,due:it.echeance||'',remind:null,cat:'pro',notes:note,created:Date.now()}));toast('Tâche créée : '+txt);gone()}
@@ -3417,7 +3420,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v57';
+var APP_VER='v59';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
