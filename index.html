@@ -2386,6 +2386,19 @@ function realDate(s){
   var d=new Date(+m[1],+m[2]-1,+m[3]);
   return d.getFullYear()===+m[1]&&d.getMonth()===+m[2]-1&&d.getDate()===+m[3];
 }
+function salvageMeet(txt){
+  var s=String(txt),k=s.search(/"compte_rendu"\s*:\s*"/);
+  if(k<0)return null;
+  var st=s.indexOf('"',s.indexOf(':',k))+1,i=st,esc2=false,c;
+  for(;i<s.length;i++){c=s[i];if(esc2){esc2=false;continue}if(c==='\\'){esc2=true;continue}if(c==='"'){var rest=s.slice(i+1,i+40);if(/^\s*[,}]/.test(rest)||!rest.trim())break}}
+  var body=s.slice(st,i).replace(/\r?\n/g,'\\n').replace(/\t/g,'\\t').replace(/\\$/,'');
+  var rep='';try{rep=JSON.parse('"'+body+'"')}catch(e){rep=body.replace(/\\n/g,'\n').replace(/\\"/g,'"').replace(/\\\\/g,'\\')}
+  if(!rep.trim())return null;
+  var acts=[],ms=s.slice(i).match(/\{[^{}]*"texte"[^{}]*\}/g)||[];
+  ms.forEach(function(x){try{var a=JSON.parse(x);if(a&&a.texte)acts.push(a)}catch(e){}});
+  var rm=s.slice(i).match(/"remarque"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  return {compte_rendu:rep,actions:acts,remarque:rm?rm[1]:''};
+}
 function parseJ(txt){
   var s=String(txt).trim().replace(/^```(?:json)?\s*/i,'').replace(/```\s*$/,'');
   var a=s.indexOf('{'),b=s.lastIndexOf('}');
@@ -3397,7 +3410,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v55';
+var APP_VER='v56';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
@@ -3644,7 +3657,7 @@ function mdHtml(src){
   for(i=0;i<L.length;i++){
     l=esc(L[i]).replace(/\s+$/,'');
     if(!l.trim()){close();continue}
-    if((m=l.match(/^\s*(#{1,4})\s+(.*)$/))){close();var lv=Math.min(m[1].length+1,4);out.push('<h'+lv+'>'+mdInline(m[2])+'</h'+lv+'>');continue}
+    if((m=l.match(/^\s*(#{1,4})\s+(.*)$/))){close();var lv=Math.min(m[1].length+1,4),ht=m[2];if(ht.length>3&&ht===ht.toUpperCase()&&/[A-ZÉÈÀ]{3}/.test(ht))ht=ht.charAt(0)+ht.slice(1).toLowerCase();out.push('<h'+lv+'>'+mdInline(ht)+'</h'+lv+'>');continue}
     if(/^\s*(-{3,}|\*{3,})\s*$/.test(l)){close();out.push('<hr>');continue}
     if((m=l.match(/^\s*[-*•]\s+(.*)$/))){if(ol){out.push('</ol>');ol=false}if(!ul){out.push('<ul>');ul=true}out.push('<li>'+liFmt(mdInline(m[1]))+'</li>');continue}
     if(MD_RUB.test(l)){
@@ -3737,6 +3750,14 @@ function renderMtResult(){
   if(MT.busy){box.hidden=false;box.innerHTML='<div class="sk" style="width:40%"></div><div class="sk" style="width:92%"></div><div class="sk" style="width:85%"></div><div class="sk" style="width:70%"></div><p class="note" style="margin:0">Rédaction du compte rendu en cours…</p>';return}
   if(MT.error){box.hidden=false;box.innerHTML='<p class="err" style="margin:0">'+esc(MT.error)+'</p>';return}
   if(!m||!m.report){box.hidden=true;box.innerHTML='';return}
+  if(/^\s*(```\w*\s*)?\{\s*"compte_rendu"/.test(m.report)){
+    var fx=salvageMeet(m.report);
+    if(fx&&fx.compte_rendu.trim()){
+      var fa=(fx.actions||[]).filter(function(a){return a&&typeof a.texte==='string'&&a.texte.trim()}).slice(0,15).map(function(a){var q=typeof a.qui==='string'?a.qui.trim().slice(0,60):'';return {texte:a.texte.trim().replace(/^[-•*\s]+/,'').slice(0,200),qui:q,date:(typeof a.date==='string'&&realDate(a.date.trim()))?a.date.trim():'',on:!q||/^(moi|je)$/i.test(q)}});
+      store.patch(m.id,{report:fx.compte_rendu.trim().slice(0,20000),actions:(m.actions&&m.actions.length)?m.actions:fa,remark:''});
+      m=meetCur()||m;
+    }
+  }
   MT.actions=(m.actions||[]).map(function(a){return Object.assign({},a)});
   var h='<h2 class="h2">Compte rendu</h2>'+(MT.edit?'<textarea id="mt-report" rows="16" maxlength="20000" aria-label="Compte rendu">'+esc(m.report)+'</textarea>':'<div id="mt-view" class="mdv">'+mdHtml(m.report)+'</div>')+
     (m.remark?'<p class="note" style="margin:0">'+esc(m.remark)+'</p>':'')+
@@ -3773,6 +3794,7 @@ async function mtGenerate(){
   try{
     var raw=await callAI(np.prov,np.prov.full||np.prov.light,buildMeetPrompt(Object.assign({},d,{title:$('#mt-title').value.trim()||('Réunion du '+(d.date||ymd(new Date())))})));
     var o=parseJ(raw);
+    if(!o||typeof o.compte_rendu!=='string'||!o.compte_rendu.trim())o=salvageMeet(raw);
     if(!o||typeof o.compte_rendu!=='string'||!o.compte_rendu.trim()){
       var t=String(raw).trim().replace(/^```\w*\s*/,'').replace(/```\s*$/,'');
       if(t.length<60)throw {empty:true};
