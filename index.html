@@ -2969,6 +2969,7 @@ function renderCourrier(){
   }
   var all=D.items.filter(function(it){return !hid[it.id]}),td=ymd(new Date());
   $('#cr-sub').innerHTML='Mis à jour <b>'+esc(crAgo(D.t||0))+'</b>'+(CR.demo?'<span class="cr-demo">Exemple<\/span> <button type="button" class="cr-link" data-cr="nodemo" style="background:none;border:0;color:var(--accent);cursor:pointer;font:inherit">Quitter l’exemple</button>':'');
+  if(D.mmStatus&&!CR.demo)$('#cr-sub').insertAdjacentHTML('beforeend','<div>'+esc(D.mmStatus)+'</div>');
   var base=all.filter(function(it){return !CR.src||it.src===CR.src});
   var cnt=function(c){return base.filter(function(it){return it.cat===c}).length};
   var tot=base.length;
@@ -3002,7 +3003,16 @@ document.addEventListener('click',function(e){
   var imp=it.cat==='urgent'?'urgent':(it.cat==='vip'||it.cat==='echeance')?'important':'';
   var txt=('Répondre à '+it.nom+' : '+it.sujet).slice(0,120),note=(it.src==='mm'?'Mattermost':'Mail')+' · '+it.nom+(it.raison?' · '+it.raison:'');
   var gone=function(){var h=ls.get('crhide',{}),lim=Date.now()-30*864e5;Object.keys(h).forEach(function(k){if(h[k]<lim)delete h[k]});h[it.id]=Date.now();ls.set('crhide',h);renderCourrier()};
-  if(a==='open'){if(it.url)window.open(it.url,'_blank','noopener');else toast('Ouvre-le dans Zimbra : '+it.nom)}
+  if(a==='open'){
+    var Dz=ls.get('courrier',null);
+    if(it.url)window.open(it.url,'_blank','noopener');
+    else if(it.src!=='mm'&&Dz&&Dz.zbase){
+      document.documentElement.dataset.prOpen=JSON.stringify({adresse:it.adresse||'',sujet:it.sujet||'',nom:it.nom||''});
+      window.dispatchEvent(new Event('pr-open'));
+      window.open(Dz.zbase+'/','_blank');
+      toast('Ouverture dans Zimbra : recherche du mail…');
+    }else toast('Ouvre-le dans Zimbra : '+it.nom);
+  }
   else if(a==='hide'){gone()}
   else if(a==='task'){guard(store.add({text:txt,done:false,star:false,imp:imp,due:it.echeance||'',remind:null,cat:'pro',notes:note,created:Date.now()}));toast('Tâche créée : '+txt);gone()}
   else if(a==='pil'){guard(store.add({text:txt,req:it.nom,owner:'',imp:imp,due:it.echeance||'',st:'',by:'',resume:'',notes:note,pil:true,proj:'',step:'',created:Date.now()}));toast('Ajouté à Pilotage : '+txt);gone()}
@@ -3387,7 +3397,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v53';
+var APP_VER='v54';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
