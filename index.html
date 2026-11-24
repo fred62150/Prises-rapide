@@ -774,6 +774,7 @@ details.pl-note[open]>summary>span{display:none}
       <div class="cr-head"><div><h2 class="tb-date" id="cr-title">Courrier</h2><div class="cr-sub" id="cr-sub"></div></div><div class="seg" id="cr-src" role="group" aria-label="Source"><button type="button" data-cs="" aria-pressed="true">Tout</button><button type="button" data-cs="zimbra" aria-pressed="false">Mails</button><button type="button" data-cs="mm" aria-pressed="false">Mattermost</button></div></div>
       <form id="cr-sf" class="cr-sf" autocomplete="off"><input id="cr-q" type="search" placeholder="Chercher une personne ou un mail…" aria-label="Rechercher"><button type="submit" class="go" id="cr-qgo" title="Cherche dans toute ta boîte Zimbra et affiche les résultats ici">Chercher</button><button type="button" id="cr-qz" title="Ouvre la recherche dans Zimbra">Dans Zimbra</button></form>
       <div id="cr-find"></div>
+      <div id="cr-sum"></div>
       <div id="cr-body"></div>
     </section>
     <section class="panel" id="p-projets" aria-label="Projets">
@@ -2987,7 +2988,7 @@ function renderCourrier(){
   crBadges();
   var body=$('#cr-body');if(!body)return;
   var vs=S.tab==='mails'?'zimbra':S.tab==='mm'?'mm':CR.src;
-  crFindRender();
+  crFindRender();crSumRender();
   var sf=$('#cr-sf');if(sf)sf.style.display=S.tab==='mm'?'none':'';
   var segEl=$('#cr-src');if(segEl)segEl.style.display=S.tab==='courrier'?'':'none';
   $('#cr-title').textContent=S.tab==='mails'?'Mails':S.tab==='mm'?'Mattermost':'Courrier';
@@ -3035,6 +3036,32 @@ function crInZimbra(q){
   crGo(((Dz&&Dz.zbase)||'https://messagerie.education.gouv.fr')+'/','zimbra-pr');
   toast('Zimbra s’ouvre et cherche « '+q+' ». Sinon, colle avec ⌘V.');
 }
+function crSumRender(){
+  var box=$('#cr-sum');if(!box)return;
+  if(S.tab!=='mm'){box.innerHTML='';return}
+  var F=ls.get('sum',null),hid=ls.get('crhide',{}),h='';
+  var btn='<button type="button" class="go" data-cr="sumgo"'+(CR.sumPend?' disabled':'')+'>'+(CR.sumPend?'Résumé en cours…':'Résumer mes canaux')+'</button>';
+  if(!F){box.innerHTML='<div class="cr-sec">Résumé par l’IA<em>'+btn+'</em></div>';return}
+  if(F.erreur){box.innerHTML='<div class="cr-sec">Résumé par l’IA<em>'+btn+'</em></div><div class="card empty"><strong>'+esc(F.erreur)+'</strong></div>';return}
+  var cs=(F.canaux||[]).filter(function(c){return !hid['mm:sum-'+c.canal]});
+  h='<div class="cr-sec">Résumé de '+esc(new Date(F.t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}))+'<em>'+btn+' <button type="button" data-cr="sumclr" style="background:none;border:0;color:var(--accent);cursor:pointer;font:inherit">Effacer</button></em></div>';
+  if(F.synthese)h+='<div class="card" style="padding:12px 14px;margin-bottom:8px">'+esc(F.synthese)+'</div>';
+  h+=cs.map(function(c){return '<div class="cr-i" data-cat="'+(c.a_faire?'traiter':'info')+'" data-sum="'+esc(c.canal)+'"><div class="cr-b"><div class="cr-top"><span class="cr-tag">'+(c.a_faire?'À faire':'Info')+'</span><span>'+esc(c.nom)+' · '+c.nb+' message'+(c.nb>1?'s':'')+(c.mentions?' · '+c.mentions+' mention'+(c.mentions>1?'s':''):'')+'</span></div><div>'+esc(c.resume)+'</div>'+(c.a_faire?'<strong class="cr-s">'+esc(c.a_faire)+'</strong>':'')+'<div class="cr-acts">'+(c.url?'<button type="button" class="go" data-sum-open="'+esc(c.url)+'">Ouvrir</button>':'')+(c.canal?'<button type="button" data-sum-read="'+esc(c.canal)+'">Canal lu</button>':'')+'</div></div></div>'}).join('');
+  box.innerHTML=h;
+}
+document.addEventListener('click',function(e){
+  var t=e.target.closest('#cr-sum [data-sum-open],#cr-sum [data-sum-read],#cr-sum [data-cr]');if(!t)return;
+  e.stopPropagation();
+  if(t.dataset.sumOpen){crGo(t.dataset.sumOpen,'mattermost-pr');return}
+  if(t.dataset.sumRead){crAct({id:'mm:sum-'+t.dataset.sumRead},'mmread',{canal:t.dataset.sumRead});return}
+  if(t.dataset.cr==='sumclr'){ls.set('sum',null);crSumRender();return}
+  if(t.dataset.cr==='sumgo'){
+    CR.sumPend=Date.now();crSumRender();
+    document.documentElement.dataset.prAct=JSON.stringify({id:'resume',act:'mmsum'});window.dispatchEvent(new Event('pr-act'));
+    var t0=CR.sumPend;setTimeout(function(){if(CR.sumPend===t0){CR.sumPend=0;ls.set('sum',{t:Date.now(),erreur:'Pas de réponse : garde un onglet Zimbra ouvert (script 0.9.11) et vérifie la clé IA dans ses Réglages.'});crSumRender()}},120000);
+  }
+},true);
+window.addEventListener('pr-sum',function(){CR.sumPend=0;crSumRender()});
 function crFindRender(){
   var box=$('#cr-find');if(!box)return;
   var F=ls.get('find',null),hid=ls.get('crhide',{});
@@ -3528,7 +3555,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v68';
+var APP_VER='v69';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
