@@ -2971,7 +2971,7 @@ function crRow(it){
   var lab=CR_LAB;
     var ech=it.echeance?' · échéance '+esc(whenLabel({due:it.echeance})):'';
     return '<div class="cr-i" data-cat="'+it.cat+'" data-id="'+esc(it.id)+'"><div class="cr-av" style="background:'+crColor(it.nom)+'">'+esc(crInit(it.nom))+'</div><div class="cr-b"><div class="cr-top"><span class="cr-tag">'+lab[it.cat]+'</span><span class="cr-src">'+(it.src==='mm'?'Mattermost':'Mail')+'</span><span>'+esc(it.nom)+' · '+esc(crAgo(it.date))+esc(ech)+'</span></div><strong class="cr-s">'+esc(it.sujet)+'</strong>'+(it.raison?'<div class="cr-r">'+esc(it.raison)+'</div>':'')+
-      '<div class="cr-acts"><button type="button" class="go" data-cr="open">Ouvrir</button><button type="button" data-cr="task">→ Tâche</button><button type="button" data-cr="pil">→ Pilotage</button><button type="button" data-cr="hide">Masquer</button></div></div></div>'
+      '<div class="cr-acts"><button type="button" class="go" data-cr="open">Ouvrir</button><button type="button" data-cr="task">→ Tâche</button><button type="button" data-cr="pil">→ Pilotage</button><button type="button" data-cr="hide">Masquer</button>'+(it.src==='mm'?'<button type="button" data-cr="seen">Vu</button>':'<button type="button" data-cr="trash">Corbeille</button>')+'</div></div></div>'
 }
 function renderCourrier(){
   crBadges();
@@ -3036,6 +3036,13 @@ document.addEventListener('click',function(e){
     }else toast('Lien indisponible pour ce message');
   }
   else if(a==='hide'){gone()}
+  else if(a==='seen'||a==='trash'){
+    if(a==='trash'&&t.dataset.sure!=='1'){t.dataset.sure='1';t.textContent='Confirmer la corbeille';t.classList.add('go');setTimeout(function(){if(t.isConnected){t.dataset.sure='';t.textContent='Corbeille';t.classList.remove('go')}},4000);return}
+    document.documentElement.dataset.prAct=JSON.stringify({id:it.id,act:a});
+    window.dispatchEvent(new Event('pr-act'));
+    gone();
+    toast(a==='trash'?'Mail envoyé à la corbeille (effectif dès qu’un onglet Zimbra est ouvert)':'Message marqué comme vu');
+  }
   else if(a==='task'){guard(store.add({text:txt,done:false,star:false,imp:imp,due:it.echeance||'',remind:null,cat:'pro',notes:note,created:Date.now()}));toast('Tâche créée : '+txt);gone()}
   else if(a==='pil'){guard(store.add({text:txt,req:it.nom,owner:'',imp:imp,due:it.echeance||'',st:'',by:'',resume:'',notes:note,pil:true,proj:'',step:'',created:Date.now()}));toast('Ajouté à Pilotage : '+txt);gone()}
 });
@@ -3420,7 +3427,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v59';
+var APP_VER='v60';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
