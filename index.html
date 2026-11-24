@@ -3031,7 +3031,7 @@ document.addEventListener('click',function(e){
       try{navigator.clipboard.writeText(qz).catch(function(){})}catch(e){}
       document.documentElement.dataset.prOpen=JSON.stringify({adresse:it.adresse||'',sujet:it.sujet||'',nom:it.nom||''});
       window.dispatchEvent(new Event('pr-open'));
-      window.open(((Dz&&Dz.zbase)||'https://messagerie.education.gouv.fr')+'/','_blank');
+      window.open(((Dz&&Dz.zbase)||'https://messagerie.education.gouv.fr')+'/','zimbra-pr');
       toast('Zimbra s’ouvre et cherche le mail. Sinon, colle la recherche avec ⌘V.');
     }else toast('Lien indisponible pour ce message');
   }
@@ -3427,7 +3427,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v60';
+var APP_VER='v61';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
