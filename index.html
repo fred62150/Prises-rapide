@@ -1070,7 +1070,8 @@ button.cr-d{font:inherit;color:inherit;cursor:pointer;text-align:center;padding:
 .cr-s{display:block;font-weight:600;font-size:15px;margin:3px 0 1px;overflow-wrap:anywhere}
 .cr-r{font-size:12.5px;color:var(--muted)}
 .cr-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.cr-i.wait{opacity:.55;pointer-events:none}.cr-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.cr-tg{font-size:11.5px;padding:2px 9px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted,#6b7587)}
+.cr-i.wait{opacity:.55;pointer-events:none}.cr-x{font-size:13.5px;line-height:1.45;margin-top:4px;color:var(--text);opacity:.88;white-space:pre-wrap;word-break:break-word}
+.cr-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.cr-tg{font-size:11.5px;padding:2px 9px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted,#6b7587)}
 .cr-tgf{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}.cr-tgf button{font:inherit;font-size:12.5px;padding:4px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:inherit;cursor:pointer}.cr-tgf button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
 .cr-wt{font-style:normal;font-size:12px;color:var(--muted,#7a8599);align-self:center}
 .cr-snz{display:none;gap:6px;flex-wrap:wrap;align-items:center}.cr-i.o-snz .m-snz,.cr-i.o-tag .m-tag,.cr-i.o-cat .m-cat{display:inline-flex}.cr-snd{font-size:12.5px;display:inline-flex;gap:5px;align-items:center;color:var(--muted,#6b7587)}
@@ -2992,8 +2993,8 @@ function crCatBtns(it){
 function crRow(it){
   var lab=CR_LAB;
     var ech=it.echeance?' · échéance '+esc(whenLabel({due:it.echeance})):'';
-    return '<div class="cr-i'+(CR.wait[it.id]?' wait':'')+'" data-cat="'+it.cat+'" data-id="'+esc(it.id)+'"><div class="cr-av" style="background:'+crColor(it.nom)+'">'+esc(crInit(it.nom))+'</div><div class="cr-b"><div class="cr-top"><span class="cr-tag">'+lab[it.cat]+'</span><span class="cr-src">'+(it.src==='mm'?'Mattermost':'Mail')+'</span><span>'+esc(it.nom)+' · '+esc(crAgo(it.date))+esc(ech)+'</span></div><strong class="cr-s">'+esc(it.sujet)+'</strong>'+(it.raison?'<div class="cr-r">'+esc(it.raison)+'</div>':'')+((it.tags&&it.tags.length)?'<div class="cr-tags">'+it.tags.map(function(g){return '<span class="cr-tg">'+esc(g)+'</span>'}).join('')+'</div>':'')+
-      '<div class="cr-acts"><button type="button" class="go" data-cr="open">Ouvrir</button>'+(it.src==='mm'?'':'<button type="button" data-cr="preview">Aperçu</button>')+'<button type="button" data-cr="task">→ Tâche</button><button type="button" data-cr="pil">→ Pilotage</button>'+(it.src==='mm'?'<button type="button" data-cr="reply">Répondre</button><button type="button" data-cr="hide">Masquer</button><button type="button" data-cr="seen">Vu</button><button type="button" data-cr="mmread">Canal lu</button>':'<button type="button" data-cr="read">Lu</button><button type="button" data-cr="flag">Drapeau</button><button type="button" data-cr="archive">Archiver</button>'+crCatBtns(it)+crTagBtns(it)+'<button type="button" data-cr="snzm">Reporter</button><span class="cr-snz m-snz"><button type="button" data-cr="snz" data-h="2">2 h</button><button type="button" data-cr="snz" data-h="tom">Demain</button><button type="button" data-cr="snz" data-h="mon">Lundi</button></span><button type="button" data-cr="hide">Masquer</button><button type="button" data-cr="trash">Corbeille</button>')+(CR.wait[it.id]?'<em class="cr-wt">en cours…</em>':'')+'</div></div></div>'
+    return '<div class="cr-i'+(CR.wait[it.id]?' wait':'')+'" data-cat="'+it.cat+'" data-id="'+esc(it.id)+'"><div class="cr-av" style="background:'+crColor(it.nom)+'">'+esc(crInit(it.nom))+'</div><div class="cr-b"><div class="cr-top"><span class="cr-tag">'+lab[it.cat]+'</span><span class="cr-src">'+(it.src==='mm'?'Mattermost':'Mail')+'</span><span>'+esc(it.nom)+' · '+esc(crAgo(it.date))+esc(ech)+'</span></div><strong class="cr-s">'+esc(it.sujet)+'</strong>'+((it.src==='mm'&&it.extrait&&it.extrait.length>(it.sujet||'').length)?'<div class="cr-x">'+esc(it.extrait.length>260?it.extrait.slice(0,260)+'…':it.extrait)+'</div>':'')+(it.raison?'<div class="cr-r">'+esc(it.raison)+'</div>':'')+((it.tags&&it.tags.length)?'<div class="cr-tags">'+it.tags.map(function(g){return '<span class="cr-tg">'+esc(g)+'</span>'}).join('')+'</div>':'')+
+      '<div class="cr-acts"><button type="button" class="go" data-cr="open">Ouvrir</button>'+'<button type="button" data-cr="preview">Aperçu</button>'+'<button type="button" data-cr="task">→ Tâche</button><button type="button" data-cr="pil">→ Pilotage</button>'+(it.src==='mm'?'<button type="button" data-cr="reply">Répondre</button><button type="button" data-cr="hide">Masquer</button><button type="button" data-cr="seen">Vu</button><button type="button" data-cr="mmread">Canal lu</button>':'<button type="button" data-cr="read">Lu</button><button type="button" data-cr="flag">Drapeau</button><button type="button" data-cr="archive">Archiver</button>'+crCatBtns(it)+crTagBtns(it)+'<button type="button" data-cr="snzm">Reporter</button><span class="cr-snz m-snz"><button type="button" data-cr="snz" data-h="2">2 h</button><button type="button" data-cr="snz" data-h="tom">Demain</button><button type="button" data-cr="snz" data-h="mon">Lundi</button></span><button type="button" data-cr="hide">Masquer</button><button type="button" data-cr="trash">Corbeille</button>')+(CR.wait[it.id]?'<em class="cr-wt">en cours…</em>':'')+'</div></div></div>'
 }
 function renderCourrier(){
   crBadges();
@@ -3145,9 +3146,15 @@ function crPreview(it){
     p.addEventListener('click',function(e){if(e.target===p||e.target.closest('[data-pv="close"]'))crPvClose()})}
   CR.prevId=it.id;p.hidden=false;
   p.innerHTML='<div class="cr-pvc"><div class="cr-pvh"><strong>'+esc(it.sujet)+'</strong><div>'+esc(it.nom)+(it.adresse?' · '+esc(it.adresse):'')+'</div></div><div class="cr-pvb">Chargement du mail…</div><div class="cr-pvf cr-acts"><button type="button" data-pv="close">Fermer</button></div></div>';
-  document.documentElement.dataset.prAct=JSON.stringify({id:it.id,act:'preview'});
-  window.dispatchEvent(new Event('pr-act'));
-  var id=it.id;setTimeout(function(){var b=document.querySelector('#cr-pv .cr-pvb');if(CR.prevId===id&&b&&/^Chargement/.test(b.textContent))b.textContent='Pas de réponse de Zimbra : garde un onglet Zimbra ouvert (script 0.9.9).'},15000);
+  if(it.src==='mm'){
+    if(!it.canal){var b0=p.querySelector('.cr-pvb');b0.textContent=it.extrait||it.sujet;}
+    else{document.documentElement.dataset.prAct=JSON.stringify({id:it.id,act:'mmprev',canal:it.canal,titre:it.sujet});window.dispatchEvent(new Event('pr-act'))}
+    CR.rep=it;var f=p.querySelector('.cr-pvf');if(f&&it.canal){var rb=document.createElement('button');rb.type='button';rb.className='go';rb.textContent='Répondre';rb.addEventListener('click',function(){var r=CR.rep;crPvClose();crReply(r)});f.insertBefore(rb,f.firstChild)}
+  }else{
+    document.documentElement.dataset.prAct=JSON.stringify({id:it.id,act:'preview'});
+    window.dispatchEvent(new Event('pr-act'));
+  }
+  var id=it.id;setTimeout(function(){var b=document.querySelector('#cr-pv .cr-pvb');if(CR.prevId===id&&b&&/^Chargement/.test(b.textContent))b.textContent='Pas de réponse : garde un onglet '+(it.src==='mm'?'Mattermost':'Zimbra')+' ouvert (script 0.9.15).'},15000);
 }
 window.addEventListener('pr-prev',function(){
   var P=ls.get('prev',null),b=document.querySelector('#cr-pv .cr-pvb');if(!P||!b||P.id!==CR.prevId)return;
@@ -3586,7 +3593,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v74';
+var APP_VER='v75';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
