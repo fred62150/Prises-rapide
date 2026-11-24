@@ -3020,7 +3020,7 @@ function renderCourrier(){
       var dg=D.mmDiag||[];
       if(dg.length)$('#cr-sub').insertAdjacentHTML('beforeend','<details id="cr-dg"'+(CR.dgOpen?' open':'')+' style="margin-top:6px"><summary style="cursor:pointer">Détail des canaux non lus ('+dg.length+')</summary><div style="font-size:13px;line-height:1.55;margin-top:4px">'+dg.map(function(g){
         var ig=g.ignores||{},igs=Object.keys(ig).map(function(k){return k+' '+ig[k]}).join(', ');
-        var why=!g.retenu?'ignoré : canal en sourdine (ajoute-le dans « Canaux Mattermost à suivre »)':(g.msgs>0?g.msgs+' message'+(g.msgs>1?'s':'')+' affiché'+(g.msgs>1?'s':''):'aucun message affichable'+(igs?' (écartés : '+igs+')':''));
+        var why=!g.retenu?'ignoré : canal en sourdine (ajoute-le dans « Canaux Mattermost à suivre »)':(g.msgs>0?g.msgs+' message'+(g.msgs>1?'s':'')+' affiché'+(g.msgs>1?'s':'')+(g.estim?' (estimation d\'après le compteur de Mattermost)':''):'aucun message affichable'+(igs?' (écartés : '+igs+')':''));
         return '• <b>'+esc(g.nom)+'</b> <span style="opacity:.7">('+esc(g.equipe||'')+')</span> · '+g.nonLus+' non lu'+(g.nonLus>1?'s':'')+(g.mentions?' · '+g.mentions+' mention'+(g.mentions>1?'s':''):'')+' → '+why}).join('<br>')+'</div></details>');
     }
     else if(nh)$('#cr-sub').insertAdjacentHTML('beforeend','<div>Masqués par toi : '+nh+ub+'</div>')}
@@ -3600,7 +3600,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v76';
+var APP_VER='v77';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
