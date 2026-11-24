@@ -772,6 +772,7 @@ details.pl-note[open]>summary>span{display:none}
     </section>
     <section class="panel" id="p-courrier" aria-label="Courrier">
       <div class="cr-head"><div><h2 class="tb-date" id="cr-title">Courrier</h2><div class="cr-sub" id="cr-sub"></div></div><div class="seg" id="cr-src" role="group" aria-label="Source"><button type="button" data-cs="" aria-pressed="true">Tout</button><button type="button" data-cs="zimbra" aria-pressed="false">Mails</button><button type="button" data-cs="mm" aria-pressed="false">Mattermost</button></div></div>
+      <form id="cr-sf" class="cr-sf" autocomplete="off"><input id="cr-q" type="search" placeholder="Chercher une personne ou un mail…" aria-label="Rechercher"><button type="submit" class="go" id="cr-qgo" title="Lance la recherche dans ton Zimbra">Chercher dans Zimbra</button></form>
       <div id="cr-body"></div>
     </section>
     <section class="panel" id="p-projets" aria-label="Projets">
@@ -1035,6 +1036,7 @@ details.pl-note[open]>summary>span{display:none}
 .cr-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
 .cr-sub b{color:var(--fg,inherit);font-weight:600}
 .cr-demo{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:color-mix(in srgb,var(--star,#C77700) 20%,transparent);color:var(--star,#C77700);margin-left:6px}
+.cr-sf{display:flex;gap:8px;margin:0 0 12px}.cr-sf input{flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:1px solid var(--line,#d8dde6);background:var(--card,#fff);color:inherit;font:inherit}.cr-sf button{white-space:nowrap}
 .cr-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:10px}
 @media (max-width:600px){.cr-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
 button.cr-t{font:inherit;color:inherit;cursor:pointer;width:100%;position:relative;overflow:hidden;text-align:left;padding:10px 10px 8px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
@@ -2919,7 +2921,7 @@ $('#sync').addEventListener('click',function(){setView('reglages',true)});
 window.addEventListener('hashchange',function(){setView(viewFromHash(),false)});
 
 /* ---------- courrier (mails + Mattermost, données locales) ---------- */
-var CR={src:'',cat:'',day:'',demo:false};
+var CR={src:'',cat:'',day:'',demo:false,q:''};
 var CR_CATS=[['vip','Surveillés'],['urgent','Urgents'],['echeance','Échéances'],['traiter','À traiter'],['sansrep','Sans réponse'],['info','Canaux']];
 function crDemo(){
   var n=Date.now(),h=3600000,d=function(k){var x=new Date();x.setDate(x.getDate()+k);return ymd(x)};
@@ -2977,6 +2979,7 @@ function renderCourrier(){
   crBadges();
   var body=$('#cr-body');if(!body)return;
   var vs=S.tab==='mails'?'zimbra':S.tab==='mm'?'mm':CR.src;
+  var sf=$('#cr-sf');if(sf)sf.style.display=S.tab==='mm'?'none':'';
   var segEl=$('#cr-src');if(segEl)segEl.style.display=S.tab==='courrier'?'':'none';
   $('#cr-title').textContent=S.tab==='mails'?'Mails':S.tab==='mm'?'Mattermost':'Courrier';
   var D=crData(),hid=ls.get('crhide',{});
@@ -2999,7 +3002,8 @@ function renderCourrier(){
   days.push('<button type="button" class="cr-d late" data-cd="late" aria-pressed="'+(CR.day==='late')+'"><small>Retard</small><b>'+late+'</b><div class="pts"></div></button>');
   for(i=0;i<7;i++){var dt=new Date();dt.setDate(dt.getDate()+i);var k=ymd(dt),n=base.filter(function(it){return it.echeance===k}).length;
     days.push('<button type="button" class="cr-d'+(i===0?' today':'')+'" data-cd="'+k+'" aria-pressed="'+(CR.day===k)+'"><small>'+dt.toLocaleDateString('fr-FR',{weekday:'short'})+'</small><b>'+dt.getDate()+'</b><div class="pts">'+Array(Math.min(n,3)+1).join('<i><\/i>')+'</div></button>')}
-  var list=base.filter(function(it){return (!CR.cat||it.cat===CR.cat)&&(!CR.day||(CR.day==='late'?(it.echeance&&it.echeance<td):it.echeance===CR.day))});
+  var qq=(CR.q||'').trim().toLowerCase();
+  var list=base.filter(function(it){return (!qq||[it.nom,it.sujet,it.adresse,it.raison].join(' ').toLowerCase().indexOf(qq)>=0)&&(!CR.cat||it.cat===CR.cat)&&(!CR.day||(CR.day==='late'?(it.echeance&&it.echeance<td):it.echeance===CR.day))});
   var ord={vip:0,urgent:1,echeance:2,traiter:3,sansrep:4,info:5};
   list.sort(function(a,b){return ord[a.cat]-ord[b.cat]||b.date-a.date});
   var rows=list.map(crRow).join('');
@@ -3014,6 +3018,17 @@ function crGo(url,name){
   window.dispatchEvent(new Event('pr-url'));
   if(de.dataset.prUrlDone!=='1')window.open(url,name);
 }
+document.addEventListener('input',function(e){if(e.target&&e.target.id==='cr-q'){CR.q=e.target.value;renderCourrier()}});
+document.addEventListener('submit',function(e){
+  if(!e.target||e.target.id!=='cr-sf')return;e.preventDefault();
+  var q=($('#cr-q').value||'').trim();if(!q){toast('Tape un nom, une adresse ou un mot du sujet');return}
+  var Dz=ls.get('courrier',null);
+  try{navigator.clipboard.writeText(q).catch(function(){})}catch(x){}
+  document.documentElement.dataset.prOpen=JSON.stringify({requete:q});
+  window.dispatchEvent(new Event('pr-open'));
+  crGo(((Dz&&Dz.zbase)||'https://messagerie.education.gouv.fr')+'/','zimbra-pr');
+  toast('Zimbra s’ouvre et cherche « '+q+' ». Sinon, colle avec ⌘V.');
+});
 function crItem(el){var D=crData();var id=el.closest('.cr-i').dataset.id;return D&&D.items.filter(function(x){return x.id===id})[0]}
 document.addEventListener('click',function(e){
   var c=e.target.closest('#p-courrier,#tb-cr');if(!c)return;
@@ -3433,7 +3448,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v64';
+var APP_VER='v65';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
