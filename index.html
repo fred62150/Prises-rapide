@@ -3008,6 +3008,12 @@ function renderCourrier(){
     '<div class="cr-sec">À traiter<em>'+list.length+(CR.cat||CR.day?' · touche à nouveau le filtre pour l’enlever':'')+'</em></div>'+
     (rows||'<div class="card empty"><strong>Rien dans cette sélection</strong></div>');
 }
+function crGo(url,name){
+  // le script Tampermonkey ouvre l'onglet dans le vrai navigateur (là où il tourne) ; sinon repli classique
+  var de=document.documentElement;de.dataset.prUrlDone='';de.dataset.prUrl=url;
+  window.dispatchEvent(new Event('pr-url'));
+  if(de.dataset.prUrlDone!=='1')window.open(url,name);
+}
 function crItem(el){var D=crData();var id=el.closest('.cr-i').dataset.id;return D&&D.items.filter(function(x){return x.id===id})[0]}
 document.addEventListener('click',function(e){
   var c=e.target.closest('#p-courrier,#tb-cr');if(!c)return;
@@ -3025,13 +3031,13 @@ document.addEventListener('click',function(e){
   var gone=function(){var h=ls.get('crhide',{}),lim=Date.now()-30*864e5;Object.keys(h).forEach(function(k){if(h[k]<lim)delete h[k]});h[it.id]=Date.now();ls.set('crhide',h);renderCourrier()};
   if(a==='open'){
     var Dz=ls.get('courrier',null);
-    if(it.url)window.open(it.url,'mattermost-pr');
+    if(it.url)crGo(it.url,'mattermost-pr');
     else if(it.src!=='mm'){
       var qz=(it.adresse?'from:'+it.adresse+' ':'')+'subject:"'+String(it.sujet||'').replace(/["()\\:]/g,' ').replace(/\s+/g,' ').trim().slice(0,80)+'"';
       try{navigator.clipboard.writeText(qz).catch(function(){})}catch(e){}
       document.documentElement.dataset.prOpen=JSON.stringify({adresse:it.adresse||'',sujet:it.sujet||'',nom:it.nom||''});
       window.dispatchEvent(new Event('pr-open'));
-      window.open(((Dz&&Dz.zbase)||'https://messagerie.education.gouv.fr')+'/','zimbra-pr');
+      crGo(((Dz&&Dz.zbase)||'https://messagerie.education.gouv.fr')+'/','zimbra-pr');
       toast('Zimbra s’ouvre et cherche le mail. Sinon, colle la recherche avec ⌘V.');
     }else toast('Lien indisponible pour ce message');
   }
@@ -3427,7 +3433,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v62';
+var APP_VER='v63';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
