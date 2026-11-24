@@ -1070,7 +1070,9 @@ button.cr-d{font:inherit;color:inherit;cursor:pointer;text-align:center;padding:
 .cr-s{display:block;font-weight:600;font-size:15px;margin:3px 0 1px;overflow-wrap:anywhere}
 .cr-r{font-size:12.5px;color:var(--muted)}
 .cr-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.cr-i.wait{opacity:.55;pointer-events:none}.cr-wt{font-style:normal;font-size:12px;color:var(--muted,#7a8599);align-self:center}
+.cr-i.wait{opacity:.55;pointer-events:none}.cr-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.cr-tg{font-size:11.5px;padding:2px 9px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted,#6b7587)}
+.cr-tgf{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}.cr-tgf button{font:inherit;font-size:12.5px;padding:4px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:inherit;cursor:pointer}.cr-tgf button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.cr-wt{font-style:normal;font-size:12px;color:var(--muted,#7a8599);align-self:center}
 .cr-snz{display:none;gap:6px}.cr-i.snz-open .cr-snz{display:inline-flex}
 .cr-pv{position:fixed;inset:0;z-index:90;background:rgba(10,14,22,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}.cr-pv[hidden]{display:none}
 .cr-pvc{background:var(--bg,#fff);border:1px solid var(--line-strong,#c3cad9);border-radius:16px;max-width:760px;width:100%;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
@@ -2930,7 +2932,7 @@ $('#sync').addEventListener('click',function(){setView('reglages',true)});
 window.addEventListener('hashchange',function(){setView(viewFromHash(),false)});
 
 /* ---------- courrier (mails + Mattermost, données locales) ---------- */
-var CR={src:'',cat:'',day:'',demo:false,q:'',pend:0,wait:{}};
+var CR={src:'',cat:'',day:'',demo:false,q:'',pend:0,wait:{},tag:''};
 var CR_CATS=[['vip','Surveillés'],['urgent','Urgents'],['echeance','Échéances'],['traiter','À traiter'],['sansrep','Sans réponse'],['info','Canaux']];
 function crDemo(){
   var n=Date.now(),h=3600000,d=function(k){var x=new Date();x.setDate(x.getDate()+k);return ymd(x)};
@@ -2978,11 +2980,15 @@ function crBadges(){
   try{if(prio&&navigator.setAppBadge)navigator.setAppBadge(prio);else if(navigator.clearAppBadge)navigator.clearAppBadge()}catch(e){}
 }
 var CR_LAB={vip:'Surveillé',urgent:'Urgent',echeance:'Échéance',traiter:'À traiter',sansrep:'Sans réponse',info:'Canal',rech:'Résultat'};
+function crTagBtns(it){
+  var E=(ls.get('courrier',null)||{}).etiquettes||[];if(!E.length)return '';
+  return '<button type="button" data-cr="tagm">Étiquette</button><span class="cr-snz">'+E.map(function(g){var on=(it.tags||[]).indexOf(g)>=0;return '<button type="button" data-cr="tagt" data-tag="'+esc(g)+'"'+(on?' class="go"':'')+'>'+(on?'✓ ':'')+esc(g)+'</button>'}).join('')+'</span>';
+}
 function crRow(it){
   var lab=CR_LAB;
     var ech=it.echeance?' · échéance '+esc(whenLabel({due:it.echeance})):'';
-    return '<div class="cr-i'+(CR.wait[it.id]?' wait':'')+'" data-cat="'+it.cat+'" data-id="'+esc(it.id)+'"><div class="cr-av" style="background:'+crColor(it.nom)+'">'+esc(crInit(it.nom))+'</div><div class="cr-b"><div class="cr-top"><span class="cr-tag">'+lab[it.cat]+'</span><span class="cr-src">'+(it.src==='mm'?'Mattermost':'Mail')+'</span><span>'+esc(it.nom)+' · '+esc(crAgo(it.date))+esc(ech)+'</span></div><strong class="cr-s">'+esc(it.sujet)+'</strong>'+(it.raison?'<div class="cr-r">'+esc(it.raison)+'</div>':'')+
-      '<div class="cr-acts"><button type="button" class="go" data-cr="open">Ouvrir</button>'+(it.src==='mm'?'':'<button type="button" data-cr="preview">Aperçu</button>')+'<button type="button" data-cr="task">→ Tâche</button><button type="button" data-cr="pil">→ Pilotage</button>'+(it.src==='mm'?'<button type="button" data-cr="reply">Répondre</button><button type="button" data-cr="hide">Masquer</button><button type="button" data-cr="seen">Vu</button><button type="button" data-cr="mmread">Canal lu</button>':'<button type="button" data-cr="read">Lu</button><button type="button" data-cr="flag">Drapeau</button><button type="button" data-cr="archive">Archiver</button><button type="button" data-cr="snzm">Reporter</button><span class="cr-snz"><button type="button" data-cr="snz" data-h="2">2 h</button><button type="button" data-cr="snz" data-h="tom">Demain</button><button type="button" data-cr="snz" data-h="mon">Lundi</button></span><button type="button" data-cr="hide">Masquer</button><button type="button" data-cr="trash">Corbeille</button>')+(CR.wait[it.id]?'<em class="cr-wt">en cours…</em>':'')+'</div></div></div>'
+    return '<div class="cr-i'+(CR.wait[it.id]?' wait':'')+'" data-cat="'+it.cat+'" data-id="'+esc(it.id)+'"><div class="cr-av" style="background:'+crColor(it.nom)+'">'+esc(crInit(it.nom))+'</div><div class="cr-b"><div class="cr-top"><span class="cr-tag">'+lab[it.cat]+'</span><span class="cr-src">'+(it.src==='mm'?'Mattermost':'Mail')+'</span><span>'+esc(it.nom)+' · '+esc(crAgo(it.date))+esc(ech)+'</span></div><strong class="cr-s">'+esc(it.sujet)+'</strong>'+(it.raison?'<div class="cr-r">'+esc(it.raison)+'</div>':'')+((it.tags&&it.tags.length)?'<div class="cr-tags">'+it.tags.map(function(g){return '<span class="cr-tg">'+esc(g)+'</span>'}).join('')+'</div>':'')+
+      '<div class="cr-acts"><button type="button" class="go" data-cr="open">Ouvrir</button>'+(it.src==='mm'?'':'<button type="button" data-cr="preview">Aperçu</button>')+'<button type="button" data-cr="task">→ Tâche</button><button type="button" data-cr="pil">→ Pilotage</button>'+(it.src==='mm'?'<button type="button" data-cr="reply">Répondre</button><button type="button" data-cr="hide">Masquer</button><button type="button" data-cr="seen">Vu</button><button type="button" data-cr="mmread">Canal lu</button>':'<button type="button" data-cr="read">Lu</button><button type="button" data-cr="flag">Drapeau</button><button type="button" data-cr="archive">Archiver</button>'+crTagBtns(it)+'<button type="button" data-cr="snzm">Reporter</button><span class="cr-snz"><button type="button" data-cr="snz" data-h="2">2 h</button><button type="button" data-cr="snz" data-h="tom">Demain</button><button type="button" data-cr="snz" data-h="mon">Lundi</button></span><button type="button" data-cr="hide">Masquer</button><button type="button" data-cr="trash">Corbeille</button>')+(CR.wait[it.id]?'<em class="cr-wt">en cours…</em>':'')+'</div></div></div>'
 }
 function renderCourrier(){
   crBadges();
@@ -3003,7 +3009,7 @@ function renderCourrier(){
   $('#cr-sub').innerHTML='Mis à jour <b>'+esc(crAgo(D.t||0))+'</b>'+(CR.demo?'<span class="cr-demo">Exemple<\/span> <button type="button" class="cr-link" data-cr="nodemo" style="background:none;border:0;color:var(--accent);cursor:pointer;font:inherit">Quitter l’exemple</button>':'');
   if(D.mmStatus&&!CR.demo)$('#cr-sub').insertAdjacentHTML('beforeend','<div>'+esc(D.mmStatus)+'</div>');
   if(!CR.demo&&!(parseFloat(D.v)>=0.7))$('#cr-sub').insertAdjacentHTML('beforeend','<div style="color:var(--star,#C77700)">Script Zimbra à mettre à jour (version 0.7) : l’ouverture des mails et les canaux Mattermost en dépendent.</div>');
-  var base=all.filter(function(it){return !vs||it.src===vs});
+  var base=all.filter(function(it){return (!vs||it.src===vs)&&(!CR.tag||(it.tags||[]).indexOf(CR.tag)>=0)});
   var cnt=function(c){return base.filter(function(it){return it.cat===c}).length};
   var tot=base.length;
   var tiles=CR_CATS.map(function(c){var n=cnt(c[0]);return '<button type="button" class="cr-t'+(n?'':' zero')+'" data-cat="'+c[0]+'" data-cc="'+c[0]+'" aria-pressed="'+(CR.cat===c[0])+'"><b>'+n+'</b><span>'+c[1]+'</span></button>'}).join('');
@@ -3017,7 +3023,9 @@ function renderCourrier(){
   var ord={vip:0,urgent:1,echeance:2,traiter:3,sansrep:4,info:5};
   list.sort(function(a,b){return ord[a.cat]-ord[b.cat]||b.date-a.date});
   var rows=list.map(crRow).join('');
-  body.innerHTML='<div class="cr-tiles">'+tiles+'</div>'+(tot?bar:'')+
+  var ets=(vs==='mm')?[]:(D.etiquettes||[]);
+  var tgf=ets.length?'<div class="cr-tgf">'+ets.map(function(g){return '<button type="button" data-ctag="'+esc(g)+'" aria-pressed="'+(CR.tag===g)+'">'+esc(g)+'</button>'}).join('')+'</div>':'';
+  body.innerHTML=tgf+'<div class="cr-tiles">'+tiles+'</div>'+(tot?bar:'')+
     '<div class="cr-sec">Échéances<em>7 prochains jours</em></div><div class="cr-frise">'+days.join('')+'</div>'+
     '<div class="cr-sec">À traiter<em>'+list.length+(CR.cat||CR.day?' · touche à nouveau le filtre pour l’enlever':'')+'</em></div>'+
     (rows||'<div class="card empty"><strong>Rien dans cette sélection</strong></div>');
@@ -3083,7 +3091,7 @@ document.addEventListener('click',function(e){if(e.target&&e.target.id==='cr-qz'
 window.addEventListener('pr-found',function(){var F=ls.get('find',null);if(F&&F.n===CR.pend)CR.pend=F.n;crFindRender()});
 function crAct(it,act,ex){
   var o={id:it.id,act:act};for(var k in(ex||{}))o[k]=ex[k];
-  CR.wait[it.id]={act:act,t:Date.now()};
+  CR.wait[it.id]={act:act,t:Date.now(),ex:ex||{}};
   document.documentElement.dataset.prAct=JSON.stringify(o);
   window.dispatchEvent(new Event('pr-act'));
   renderCourrier();
@@ -3096,6 +3104,8 @@ window.addEventListener('pr-actres',function(){
   var w=CR.wait[R.id];if(w.act!==R.act)return;delete CR.wait[R.id];
   if(R.ok){
     if(R.act==='flag')toast('Drapeau mis ou retiré');
+    else if(R.act==='tag'){var C=ls.get('courrier',null),g=w.ex.tag;function maj(x){if(x&&x.id===R.id){var a=(x.tags||[]).filter(function(y){return y!==g});if(w.ex.on)a.push(g);x.tags=a}}
+      if(C&&C.items)C.items.forEach(maj);ls.set('courrier',C);var F=ls.get('find',null);if(F&&F.items){F.items.forEach(maj);ls.set('find',F)}toast(w.ex.on?'Étiquette « '+g+' » posée':'Étiquette « '+g+' » retirée')}
     else{crHideId(R.id);toast({trash:'Mail à la corbeille',read:'Marqué comme lu',archive:'Mail archivé',snz:'Mail reporté',seen:'Message marqué comme vu',mmread:'Canal marqué comme lu dans Mattermost',mmreply:'Réponse envoyée'}[R.act]||'Fait')}
   }else toast('Échec : '+(R.erreur||'erreur Zimbra'));
   renderCourrier();
@@ -3136,6 +3146,7 @@ function crItem(el){var D=crData();var id=el.closest('.cr-i').dataset.id;var F=l
 document.addEventListener('click',function(e){
   var c=e.target.closest('#p-courrier,#tb-cr');if(!c)return;
   var t=e.target.closest('[data-cc]');if(t){CR.cat=CR.cat===t.dataset.cc?'':t.dataset.cc;renderCourrier();return}
+  t=e.target.closest('[data-ctag]');if(t){CR.tag=CR.tag===t.dataset.ctag?'':t.dataset.ctag;renderCourrier();return}
   t=e.target.closest('[data-cd]');if(t){CR.day=CR.day===t.dataset.cd?'':t.dataset.cd;renderCourrier();return}
   t=e.target.closest('[data-cs]');if(t){CR.src=t.dataset.cs;renderCourrier();return}
   t=e.target.closest('[data-cr]');if(!t)return;
@@ -3161,6 +3172,8 @@ document.addEventListener('click',function(e){
     }else toast('Lien indisponible pour ce message');
   }
   else if(a==='hide'){gone()}
+  else if(a==='tagm'){t.closest('.cr-i').classList.toggle('snz-open')}
+  else if(a==='tagt'){var g=t.dataset.tag,on=(it.tags||[]).indexOf(g)<0;crAct(it,'tag',{tag:g,on:on})}
   else if(a==='snzm'){t.closest('.cr-i').classList.toggle('snz-open')}
   else if(a==='preview'){crPreview(it)}
   else if(a==='reply'){crReply(it)}
@@ -3555,7 +3568,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v70';
+var APP_VER='v71';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
