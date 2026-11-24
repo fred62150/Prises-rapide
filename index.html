@@ -1073,7 +1073,7 @@ button.cr-d{font:inherit;color:inherit;cursor:pointer;text-align:center;padding:
 .cr-i.wait{opacity:.55;pointer-events:none}.cr-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.cr-tg{font-size:11.5px;padding:2px 9px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted,#6b7587)}
 .cr-tgf{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}.cr-tgf button{font:inherit;font-size:12.5px;padding:4px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:inherit;cursor:pointer}.cr-tgf button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
 .cr-wt{font-style:normal;font-size:12px;color:var(--muted,#7a8599);align-self:center}
-.cr-snz{display:none;gap:6px}.cr-i.snz-open .cr-snz{display:inline-flex}
+.cr-snz{display:none;gap:6px;flex-wrap:wrap;align-items:center}.cr-i.o-snz .m-snz,.cr-i.o-tag .m-tag,.cr-i.o-cat .m-cat{display:inline-flex}.cr-snd{font-size:12.5px;display:inline-flex;gap:5px;align-items:center;color:var(--muted,#6b7587)}
 .cr-pv{position:fixed;inset:0;z-index:90;background:rgba(10,14,22,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}.cr-pv[hidden]{display:none}
 .cr-pvc{background:var(--bg,#fff);border:1px solid var(--line-strong,#c3cad9);border-radius:16px;max-width:760px;width:100%;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .cr-pvh{padding:16px 18px 10px;border-bottom:1px solid var(--line,#e3e7ee)}.cr-pvh strong{display:block;font-size:17px;margin-bottom:4px}.cr-pvh div{font-size:13px;color:var(--muted,#6b7587)}
@@ -2982,13 +2982,18 @@ function crBadges(){
 var CR_LAB={vip:'Surveillé',urgent:'Urgent',echeance:'Échéance',traiter:'À traiter',sansrep:'Sans réponse',info:'Canal',rech:'Résultat'};
 function crTagBtns(it){
   var E=(ls.get('courrier',null)||{}).etiquettes||[];if(!E.length)return '';
-  return '<button type="button" data-cr="tagm">Étiquette</button><span class="cr-snz">'+E.map(function(g){var on=(it.tags||[]).indexOf(g)>=0;return '<button type="button" data-cr="tagt" data-tag="'+esc(g)+'"'+(on?' class="go"':'')+'>'+(on?'✓ ':'')+esc(g)+'</button>'}).join('')+'</span>';
+  return '<button type="button" data-cr="tagm">Étiquette</button><span class="cr-snz m-tag">'+E.map(function(g){var on=(it.tags||[]).indexOf(g)>=0;return '<button type="button" data-cr="tagt" data-tag="'+esc(g)+'"'+(on?' class="go"':'')+'>'+(on?'✓ ':'')+esc(g)+'</button>'}).join('')+'</span>';
+}
+function crCatBtns(it){
+  if(it.src==='mm'||it.cat==='rech')return '';
+  var L={vip:'Surveillé',urgent:'Urgent',echeance:'Échéance',traiter:'À traiter',sansrep:'Sans réponse'};
+  return '<button type="button" data-cr="catm">Catégorie</button><span class="cr-snz m-cat">'+Object.keys(L).map(function(k){return '<button type="button" data-cr="catt" data-c="'+k+'"'+(it.cat===k?' class="go"':'')+'>'+(it.cat===k?'✓ ':'')+L[k]+'</button>'}).join('')+'<button type="button" data-cr="catt" data-c="auto">Automatique</button>'+(it.adresse?'<label class="cr-snd"><input type="checkbox" class="cr-sndr"> pour tous les mails de cet expéditeur</label>':'')+'</span>';
 }
 function crRow(it){
   var lab=CR_LAB;
     var ech=it.echeance?' · échéance '+esc(whenLabel({due:it.echeance})):'';
     return '<div class="cr-i'+(CR.wait[it.id]?' wait':'')+'" data-cat="'+it.cat+'" data-id="'+esc(it.id)+'"><div class="cr-av" style="background:'+crColor(it.nom)+'">'+esc(crInit(it.nom))+'</div><div class="cr-b"><div class="cr-top"><span class="cr-tag">'+lab[it.cat]+'</span><span class="cr-src">'+(it.src==='mm'?'Mattermost':'Mail')+'</span><span>'+esc(it.nom)+' · '+esc(crAgo(it.date))+esc(ech)+'</span></div><strong class="cr-s">'+esc(it.sujet)+'</strong>'+(it.raison?'<div class="cr-r">'+esc(it.raison)+'</div>':'')+((it.tags&&it.tags.length)?'<div class="cr-tags">'+it.tags.map(function(g){return '<span class="cr-tg">'+esc(g)+'</span>'}).join('')+'</div>':'')+
-      '<div class="cr-acts"><button type="button" class="go" data-cr="open">Ouvrir</button>'+(it.src==='mm'?'':'<button type="button" data-cr="preview">Aperçu</button>')+'<button type="button" data-cr="task">→ Tâche</button><button type="button" data-cr="pil">→ Pilotage</button>'+(it.src==='mm'?'<button type="button" data-cr="reply">Répondre</button><button type="button" data-cr="hide">Masquer</button><button type="button" data-cr="seen">Vu</button><button type="button" data-cr="mmread">Canal lu</button>':'<button type="button" data-cr="read">Lu</button><button type="button" data-cr="flag">Drapeau</button><button type="button" data-cr="archive">Archiver</button>'+crTagBtns(it)+'<button type="button" data-cr="snzm">Reporter</button><span class="cr-snz"><button type="button" data-cr="snz" data-h="2">2 h</button><button type="button" data-cr="snz" data-h="tom">Demain</button><button type="button" data-cr="snz" data-h="mon">Lundi</button></span><button type="button" data-cr="hide">Masquer</button><button type="button" data-cr="trash">Corbeille</button>')+(CR.wait[it.id]?'<em class="cr-wt">en cours…</em>':'')+'</div></div></div>'
+      '<div class="cr-acts"><button type="button" class="go" data-cr="open">Ouvrir</button>'+(it.src==='mm'?'':'<button type="button" data-cr="preview">Aperçu</button>')+'<button type="button" data-cr="task">→ Tâche</button><button type="button" data-cr="pil">→ Pilotage</button>'+(it.src==='mm'?'<button type="button" data-cr="reply">Répondre</button><button type="button" data-cr="hide">Masquer</button><button type="button" data-cr="seen">Vu</button><button type="button" data-cr="mmread">Canal lu</button>':'<button type="button" data-cr="read">Lu</button><button type="button" data-cr="flag">Drapeau</button><button type="button" data-cr="archive">Archiver</button>'+crCatBtns(it)+crTagBtns(it)+'<button type="button" data-cr="snzm">Reporter</button><span class="cr-snz m-snz"><button type="button" data-cr="snz" data-h="2">2 h</button><button type="button" data-cr="snz" data-h="tom">Demain</button><button type="button" data-cr="snz" data-h="mon">Lundi</button></span><button type="button" data-cr="hide">Masquer</button><button type="button" data-cr="trash">Corbeille</button>')+(CR.wait[it.id]?'<em class="cr-wt">en cours…</em>':'')+'</div></div></div>'
 }
 function renderCourrier(){
   crBadges();
@@ -3104,6 +3109,8 @@ window.addEventListener('pr-actres',function(){
   var w=CR.wait[R.id];if(w.act!==R.act)return;delete CR.wait[R.id];
   if(R.ok){
     if(R.act==='flag')toast('Drapeau mis ou retiré');
+    else if(R.act==='cat'){var C2=ls.get('courrier',null),e2=w.ex;if(C2&&C2.items&&e2.cat!=='auto'){C2.items.forEach(function(x){if(x.id===R.id||(e2.sender&&e2.adresse&&x.adresse&&x.adresse.toLowerCase()===e2.adresse.toLowerCase()))x.cat=e2.cat});ls.set('courrier',C2)}
+      toast(e2.cat==='auto'?'Retour au classement automatique à la prochaine actualisation':'Catégorie modifiée'+(e2.sender?' pour cet expéditeur':''))}
     else if(R.act==='tag'){var C=ls.get('courrier',null),g=w.ex.tag;function maj(x){if(x&&x.id===R.id){var a=(x.tags||[]).filter(function(y){return y!==g});if(w.ex.on)a.push(g);x.tags=a}}
       if(C&&C.items)C.items.forEach(maj);ls.set('courrier',C);var F=ls.get('find',null);if(F&&F.items){F.items.forEach(maj);ls.set('find',F)}toast(w.ex.on?'Étiquette « '+g+' » posée':'Étiquette « '+g+' » retirée')}
     else{crHideId(R.id);toast({trash:'Mail à la corbeille',read:'Marqué comme lu',archive:'Mail archivé',snz:'Mail reporté',seen:'Message marqué comme vu',mmread:'Canal marqué comme lu dans Mattermost',mmreply:'Réponse envoyée'}[R.act]||'Fait')}
@@ -3172,9 +3179,11 @@ document.addEventListener('click',function(e){
     }else toast('Lien indisponible pour ce message');
   }
   else if(a==='hide'){gone()}
-  else if(a==='tagm'){t.closest('.cr-i').classList.toggle('snz-open')}
+  else if(a==='tagm'){t.closest('.cr-i').classList.toggle('o-tag')}
+  else if(a==='catm'){t.closest('.cr-i').classList.toggle('o-cat')}
+  else if(a==='catt'){var ch=t.closest('.cr-i').querySelector('.cr-sndr');crAct(it,'cat',{cat:t.dataset.c,sender:!!(ch&&ch.checked),adresse:it.adresse||''})}
   else if(a==='tagt'){var g=t.dataset.tag,on=(it.tags||[]).indexOf(g)<0;crAct(it,'tag',{tag:g,on:on})}
-  else if(a==='snzm'){t.closest('.cr-i').classList.toggle('snz-open')}
+  else if(a==='snzm'){t.closest('.cr-i').classList.toggle('o-snz')}
   else if(a==='preview'){crPreview(it)}
   else if(a==='reply'){crReply(it)}
   else if(a==='mmread'){if(!it.canal){toast('Attends la prochaine actualisation du script (30 s) et réessaie');return}crAct(it,'mmread',{canal:it.canal})}
@@ -3568,7 +3577,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v71';
+var APP_VER='v72';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
