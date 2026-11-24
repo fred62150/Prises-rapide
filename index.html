@@ -3016,7 +3016,13 @@ function renderCourrier(){
   $('#cr-sub').innerHTML='Mis à jour <b>'+esc(crAgo(D.t||0))+'</b>'+(CR.demo?'<span class="cr-demo">Exemple<\/span> <button type="button" class="cr-link" data-cr="nodemo" style="background:none;border:0;color:var(--accent);cursor:pointer;font:inherit">Quitter l’exemple</button>':'');
   if(D.mmStatus&&!CR.demo)$('#cr-sub').insertAdjacentHTML('beforeend','<div>'+esc(D.mmStatus)+'</div>');
   if(!CR.demo){var nm=D.items.filter(function(it){return !vs||it.src===vs}),nh=nm.filter(function(it){return hid[it.id]}).length,ub=nh?' <button type="button" data-cr="unhide" style="background:none;border:0;color:var(--accent);cursor:pointer;font:inherit">Réafficher</button>':'';
-    if(vs==='mm')$('#cr-sub').insertAdjacentHTML('beforeend','<div>Affichés : <b>'+(nm.length-nh)+'</b>'+(nh?' · masqués par toi : '+nh+ub:'')+((D.mmReportes>0)?' · reportés : '+D.mmReportes:'')+'</div>');
+    if(vs==='mm'){$('#cr-sub').insertAdjacentHTML('beforeend','<div>Affichés : <b>'+(nm.length-nh)+'</b>'+(nh?' · masqués par toi : '+nh+ub:'')+((D.mmReportes>0)?' · reportés : '+D.mmReportes:'')+'</div>');
+      var dg=D.mmDiag||[];
+      if(dg.length)$('#cr-sub').insertAdjacentHTML('beforeend','<details id="cr-dg"'+(CR.dgOpen?' open':'')+' style="margin-top:6px"><summary style="cursor:pointer">Détail des canaux non lus ('+dg.length+')</summary><div style="font-size:13px;line-height:1.55;margin-top:4px">'+dg.map(function(g){
+        var ig=g.ignores||{},igs=Object.keys(ig).map(function(k){return k+' '+ig[k]}).join(', ');
+        var why=!g.retenu?'ignoré : canal en sourdine (ajoute-le dans « Canaux Mattermost à suivre »)':(g.msgs>0?g.msgs+' message'+(g.msgs>1?'s':'')+' affiché'+(g.msgs>1?'s':''):'aucun message affichable'+(igs?' (écartés : '+igs+')':''));
+        return '• <b>'+esc(g.nom)+'</b> <span style="opacity:.7">('+esc(g.equipe||'')+')</span> · '+g.nonLus+' non lu'+(g.nonLus>1?'s':'')+(g.mentions?' · '+g.mentions+' mention'+(g.mentions>1?'s':''):'')+' → '+why}).join('<br>')+'</div></details>');
+    }
     else if(nh)$('#cr-sub').insertAdjacentHTML('beforeend','<div>Masqués par toi : '+nh+ub+'</div>')}
   if(!CR.demo&&!(parseFloat(D.v)>=0.7))$('#cr-sub').insertAdjacentHTML('beforeend','<div style="color:var(--star,#C77700)">Script Zimbra à mettre à jour (version 0.7) : l’ouverture des mails et les canaux Mattermost en dépendent.</div>');
   var base=all.filter(function(it){return (!vs||it.src===vs)&&(!CR.tag||(it.tags||[]).indexOf(CR.tag)>=0)});
@@ -3057,6 +3063,7 @@ function crInZimbra(q){
   crGo(((Dz&&Dz.zbase)||'https://messagerie.education.gouv.fr')+'/','zimbra-pr');
   toast('Zimbra s’ouvre et cherche « '+q+' ». Sinon, colle avec ⌘V.');
 }
+document.addEventListener('toggle',function(e){if(e.target&&e.target.id==='cr-dg')CR.dgOpen=e.target.open},true);
 function crSumRender(){
   var box=$('#cr-sum');if(!box)return;
   if(S.tab!=='mm'){box.innerHTML='';return}
@@ -3593,7 +3600,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v75';
+var APP_VER='v76';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
