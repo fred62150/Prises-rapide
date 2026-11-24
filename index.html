@@ -2997,6 +2997,7 @@ function crRow(it){
 }
 function renderCourrier(){
   crBadges();
+  if(CR.lastTab!==S.tab){if(CR.lastTab){CR.cat='';CR.day='';CR.tag='';CR.q='';var qi0=$('#cr-q');if(qi0)qi0.value=''}CR.lastTab=S.tab}
   var body=$('#cr-body');if(!body)return;
   var vs=S.tab==='mails'?'zimbra':S.tab==='mm'?'mm':CR.src;
   crFindRender();crSumRender();
@@ -3013,18 +3014,22 @@ function renderCourrier(){
   var all=D.items.filter(function(it){return !hid[it.id]}),td=ymd(new Date());
   $('#cr-sub').innerHTML='Mis à jour <b>'+esc(crAgo(D.t||0))+'</b>'+(CR.demo?'<span class="cr-demo">Exemple<\/span> <button type="button" class="cr-link" data-cr="nodemo" style="background:none;border:0;color:var(--accent);cursor:pointer;font:inherit">Quitter l’exemple</button>':'');
   if(D.mmStatus&&!CR.demo)$('#cr-sub').insertAdjacentHTML('beforeend','<div>'+esc(D.mmStatus)+'</div>');
+  if(vs==='mm'&&!CR.demo){var nm=D.items.filter(function(it){return it.src==='mm'}),nh=nm.filter(function(it){return hid[it.id]}).length;$('#cr-sub').insertAdjacentHTML('beforeend','<div>Affichés : <b>'+(nm.length-nh)+'</b>'+(nh?' · masqués par toi : '+nh:'')+((D.mmReportes>0)?' · reportés : '+D.mmReportes:'')+'</div>')}
   if(!CR.demo&&!(parseFloat(D.v)>=0.7))$('#cr-sub').insertAdjacentHTML('beforeend','<div style="color:var(--star,#C77700)">Script Zimbra à mettre à jour (version 0.7) : l’ouverture des mails et les canaux Mattermost en dépendent.</div>');
   var base=all.filter(function(it){return (!vs||it.src===vs)&&(!CR.tag||(it.tags||[]).indexOf(CR.tag)>=0)});
-  var cnt=function(c){return base.filter(function(it){return it.cat===c}).length};
-  var tot=base.length;
+  var qq=(CR.q||'').trim().toLowerCase();
+  var fq=function(it){return !qq||[it.nom,it.sujet,it.adresse,it.raison].join(' ').toLowerCase().indexOf(qq)>=0};
+  var fd=function(it){return !CR.day||(CR.day==='late'?(it.echeance&&it.echeance<td):it.echeance===CR.day)};
+  var fc=function(it){return !CR.cat||it.cat===CR.cat};
+  var cnt=function(c){return base.filter(function(it){return it.cat===c&&fq(it)&&fd(it)}).length};
+  var tot=base.filter(function(it){return fq(it)&&fd(it)}).length;
   var tiles=CR_CATS.map(function(c){var n=cnt(c[0]);return '<button type="button" class="cr-t'+(n?'':' zero')+'" data-cat="'+c[0]+'" data-cc="'+c[0]+'" aria-pressed="'+(CR.cat===c[0])+'"><b>'+n+'</b><span>'+c[1]+'</span></button>'}).join('');
   var bar='<div class="cr-bar" aria-hidden="true">'+CR_CATS.filter(function(c){return cnt(c[0])}).map(function(c){return '<i data-cat="'+c[0]+'" style="flex:'+cnt(c[0])+'"></i>'}).join('')+'</div>';
-  var days=[],i,late=base.filter(function(it){return it.echeance&&it.echeance<td}).length;
+  var days=[],i,late=base.filter(function(it){return it.echeance&&it.echeance<td&&fq(it)&&fc(it)}).length;
   days.push('<button type="button" class="cr-d late" data-cd="late" aria-pressed="'+(CR.day==='late')+'"><small>Retard</small><b>'+late+'</b><div class="pts"></div></button>');
-  for(i=0;i<7;i++){var dt=new Date();dt.setDate(dt.getDate()+i);var k=ymd(dt),n=base.filter(function(it){return it.echeance===k}).length;
+  for(i=0;i<7;i++){var dt=new Date();dt.setDate(dt.getDate()+i);var k=ymd(dt),n=base.filter(function(it){return it.echeance===k&&fq(it)&&fc(it)}).length;
     days.push('<button type="button" class="cr-d'+(i===0?' today':'')+'" data-cd="'+k+'" aria-pressed="'+(CR.day===k)+'"><small>'+dt.toLocaleDateString('fr-FR',{weekday:'short'})+'</small><b>'+dt.getDate()+'</b><div class="pts">'+Array(Math.min(n,3)+1).join('<i><\/i>')+'</div></button>')}
-  var qq=(CR.q||'').trim().toLowerCase();
-  var list=base.filter(function(it){return (!qq||[it.nom,it.sujet,it.adresse,it.raison].join(' ').toLowerCase().indexOf(qq)>=0)&&(!CR.cat||it.cat===CR.cat)&&(!CR.day||(CR.day==='late'?(it.echeance&&it.echeance<td):it.echeance===CR.day))});
+  var list=base.filter(function(it){return fq(it)&&fc(it)&&fd(it)});
   var ord={vip:0,urgent:1,echeance:2,traiter:3,sansrep:4,info:5};
   list.sort(function(a,b){return ord[a.cat]-ord[b.cat]||b.date-a.date});
   var rows=list.map(crRow).join('');
@@ -3032,7 +3037,7 @@ function renderCourrier(){
   var tgf=ets.length?'<div class="cr-tgf">'+ets.map(function(g){return '<button type="button" data-ctag="'+esc(g)+'" aria-pressed="'+(CR.tag===g)+'">'+esc(g)+'</button>'}).join('')+'</div>':'';
   body.innerHTML=tgf+'<div class="cr-tiles">'+tiles+'</div>'+(tot?bar:'')+
     '<div class="cr-sec">Échéances<em>7 prochains jours</em></div><div class="cr-frise">'+days.join('')+'</div>'+
-    '<div class="cr-sec">À traiter<em>'+list.length+(CR.cat||CR.day?' · touche à nouveau le filtre pour l’enlever':'')+'</em></div>'+
+    '<div class="cr-sec">À traiter<em>'+list.length+(CR.cat||CR.day||CR.tag||qq?' · filtre actif <button type="button" data-cr="clrf" style="background:none;border:0;color:var(--accent);cursor:pointer;font:inherit">Tout afficher</button>':'')+'</em></div>'+
     (rows||'<div class="card empty"><strong>Rien dans cette sélection</strong></div>');
 }
 function crGo(url,name){
@@ -3158,6 +3163,7 @@ document.addEventListener('click',function(e){
   t=e.target.closest('[data-cs]');if(t){CR.src=t.dataset.cs;renderCourrier();return}
   t=e.target.closest('[data-cr]');if(!t)return;
   var a=t.dataset.cr;
+  if(a==='clrf'){CR.cat='';CR.day='';CR.tag='';CR.q='';var qi=$('#cr-q');if(qi)qi.value='';renderCourrier();return}
   if(a==='clearfind'){ls.set('find',null);CR.pend=0;crFindRender();return}
   if(a==='go'){setView('courrier',true);return}
   if(a==='demo'){CR.demo=true;renderCourrier();return}
@@ -3577,7 +3583,7 @@ $('#pl-list').addEventListener('submit',function(e){
 })();
 
 /* ---------- démarrage ---------- */
-var APP_VER='v72';
+var APP_VER='v73';
 $('#ver-t').textContent='Cette page : '+APP_VER+'. Si le numéro est plus ancien que celui annoncé, touche « Forcer la mise à jour ».';
 $('#ver-up').addEventListener('click',async function(){
   this.disabled=true;this.textContent='Mise à jour…';
