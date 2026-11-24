@@ -1,4 +1,4 @@
-var V='prise-rapide-v66';
+var V='prise-rapide-v67';
 self.addEventListener('push',function(e){
   var d={};
   try{d=e.data.json()}catch(x){d={title:'Rappel',body:e.data?e.data.text():''}}
